@@ -1,4 +1,6 @@
 ﻿- PBRenderer
-  learn from PBRT-v4 and build it by msvc
+
+  - refer to PBRT-v4
+  - build it by msvc
 
 - Content
