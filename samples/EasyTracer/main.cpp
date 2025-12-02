@@ -3,9 +3,11 @@
 #include <rapidobj/rapidobj.hpp>
 #include <spdlog/spdlog.h>
 #include <logger.hpp>
+#include <sfml/graphics.hpp>
 int main()
 {
     core::Logger::Init();
+    sf::RenderWindow window;
 
     PBRT_INFO("Hello, PBRT!");
 
