@@ -10,3 +10,6 @@
 [submodule "thirdParty/sfml"]
 	path = thirdParty/sfml
 	url = https://github.com/SFML/SFML.git
+[submodule "thirdParty/openexr"]
+	path = thirdParty/openexr
+	url = https://github.com/AcademySoftwareFoundation/openexr.git

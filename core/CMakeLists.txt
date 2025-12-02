@@ -15,4 +15,5 @@ target_link_libraries(core
     rapidobj
     spdlog::spdlog
     sfml-graphics
+    OpenEXR::OpenEXR
 )
