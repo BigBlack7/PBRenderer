@@ -11,6 +11,7 @@ namespace pt
             if (task != nullptr)
             {
                 task->Run();
+                delete task;
                 master->mPendingTaskCount--;
             }
             else
@@ -52,27 +53,56 @@ namespace pt
     struct ParallelTask : public Task
     {
     private:
-        size_t __x__, __y__;
+        size_t __x__, __y__, __chunkWidth__, __chunkHeight__;
         std::function<void(size_t, size_t)> __lambda__;
 
     public:
-        ParallelTask(size_t x, size_t y, const std::function<void(size_t, size_t)> &lambda) : __x__(x), __y__(y), __lambda__(lambda) {}
+        ParallelTask(size_t x, size_t y, size_t chunk_width, size_t chunk_height, const std::function<void(size_t, size_t)> &lambda) : __x__(x), __y__(y), __chunkWidth__(chunk_width), __chunkHeight__(chunk_height), __lambda__(lambda) {}
 
         void Run() override
         {
-            __lambda__(__x__, __y__);
+            for (size_t i = 0; i < __chunkWidth__; i++)
+            {
+                for (size_t j = 0; j < __chunkHeight__; j++)
+                {
+                    __lambda__(__x__ + i, __y__ + j);
+                }
+            }
         }
     };
 
-    void ThreadPool::ParallelFor(size_t width, size_t height, const std::function<void(size_t, size_t)> &lambda)
+    void ThreadPool::ParallelFor(size_t width, size_t height, const std::function<void(size_t, size_t)> &lambda, bool isComplex)
     {
         Guard guard(mLock);
-        for (size_t x = 0; x < width; x++)
+
+        // 将大量任务分块, 减少new Task的次数
+        float chunk_width_float = static_cast<float>(width) / std::sqrt(mThreads.size());
+        float chunk_height_float = static_cast<float>(height)  / std::sqrt(mThreads.size());
+        if(isComplex)
         {
-            for (size_t y = 0; y < height; y++)
+            chunk_width_float /= std::sqrt(16);
+            chunk_height_float /= std::sqrt(16);
+        }
+        size_t chunk_width = std::ceil(chunk_width_float);
+        size_t chunk_height = std::ceil(chunk_height_float);
+
+        for (size_t x = 0; x < width; x += chunk_width)
+        {
+            for (size_t y = 0; y < height; y += chunk_height)
             {
                 mPendingTaskCount++;
-                mTasks.push(new ParallelTask(x, y, lambda));
+
+                // 处理最后一个块的边界情况
+                if (x + chunk_width > width)
+                {
+                    chunk_width = width - x;
+                }
+                if (y + chunk_height > height)
+                {
+                    chunk_height = height - y;
+                }
+
+                mTasks.push(new ParallelTask(x, y, chunk_width, chunk_height, lambda));
             }
         }
     }

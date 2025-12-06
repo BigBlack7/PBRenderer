@@ -1,4 +1,5 @@
 ﻿#include "film.hpp"
+#include "thread/threadPool.hpp"
 #include "utils/logger.hpp"
 #include "utils/rgb.hpp"
 #include <fstream>
@@ -17,18 +18,17 @@ namespace pt
         file << "P6\n"
              << mWidth << " " << mHeight << "\n255\n";
 
-        for (size_t y = 0; y < mHeight; y++)
-        {
-            for (size_t x = 0; x < mWidth; x++)
-            {
-                auto pixel = GetPixel(x, y);
-                RGB rgb(pixel.__color__ / static_cast<float>(pixel.__sampleCount__));
-                file << static_cast<uint8_t>(rgb.mRed)
-                     << static_cast<uint8_t>(rgb.mGreen)
-                     << static_cast<uint8_t>(rgb.mBlue);
-            }
-        }
-        file.close();
+        std::vector<uint8_t> buffer(mWidth * mHeight * 3);
+        threadPool.ParallelFor(mWidth, mHeight, [&](size_t x, size_t y) {
+            auto pixel = GetPixel(x, y);
+            RGB rgb(pixel.__color__ / static_cast<float>(pixel.__sampleCount__));
+            auto idx = (y * mWidth + x) * 3;
+            buffer[idx + 0] = rgb.mRed;
+            buffer[idx + 1] = rgb.mGreen;
+            buffer[idx + 2] = rgb.mBlue;
+        }, false);
+        threadPool.Wait();
+        file.write(reinterpret_cast<const char *>(buffer.data()), buffer.size());
 
         // 文件保存成功后获取绝对路径
         if (std::filesystem::exists(filename))

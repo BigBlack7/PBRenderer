@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "triangle.hpp"
+#include "accelerate/bvh.hpp"
 #include <vector>
 #include <filesystem>
 
@@ -9,11 +10,16 @@ namespace pt
     class Model : public Shape
     {
     private:
-        std::vector<Triangle> mTriangles;
+        BVH mBVH{};
 
     public:
-        Model(const std::vector<Triangle> &triangles) : mTriangles(triangles) {}
-        Model(const std::filesystem::path &filename); // 读取obj文件
+        Model(const std::vector<Triangle> &triangles)
+        {
+            auto triangles_copy = triangles;
+            mBVH.Build(std::move(triangles_copy));
+        }
+        Model(const std::filesystem::path &filename, bool byMyself); // 读取obj文件 by myself
+        Model(const std::filesystem::path &filename);                // 读取obj文件 by rapidobj
 
         std::optional<HitInfo> Intersect(const Ray &ray, float t_min, float t_max) const override;
     };

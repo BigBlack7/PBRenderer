@@ -11,6 +11,7 @@ namespace pt
     class Task
     {
     public:
+        virtual ~Task() = default;
         virtual void Run() = 0;
     };
 
@@ -29,7 +30,7 @@ namespace pt
         ThreadPool(size_t thread_count = 0);
         ~ThreadPool();
 
-        void ParallelFor(size_t width, size_t height, const std::function<void(size_t, size_t)> &lambda);
+        void ParallelFor(size_t width, size_t height, const std::function<void(size_t, size_t)> &lambda, bool isComplex = true);
         void Wait() const;
 
         void AddTask(Task *task);

@@ -9,7 +9,7 @@
   - class name(XxXxx)
   - class member var name(mXxx)
   - struct name(XxXxx)
-  - struct member var name(_xxXxx_)
+  - struct member var name(--xxXxx--)
   - all funcs name(XxXxx)
   - temporary var or func var(xx_xxx)
 
