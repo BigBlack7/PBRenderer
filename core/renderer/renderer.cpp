@@ -8,6 +8,7 @@ namespace pt
     {
         size_t current_spp = 0, increase = 1;
         auto &film = mCamera.GetFilm();
+        film.Clear();
         Progress progress(film.GetWidth() * film.GetHeight() * spp);
         while(current_spp < spp)
         {

@@ -19,7 +19,19 @@ namespace pt
             __bMax__ = glm::max(__bMax__, position);
         }
 
+        void Expand(const Bounds &bounds)
+        {
+            __bMin__ = glm::min(__bMin__, bounds.__bMin__);
+            __bMax__ = glm::max(__bMax__, bounds.__bMax__);
+        }
+
         bool HasIntersection(const Ray &ray, float t_min, float t_max) const;
+        bool HasIntersection(const Ray &ray, const glm::vec3 &inv_dir, float t_min, float t_max) const;
         glm::vec3 GetDiagonal() const { return __bMax__ - __bMin__; }
+        float GetSurfaceArea() const 
+        {
+            auto diagonal = GetDiagonal();
+            return (diagonal.x * (diagonal.y + diagonal.z) + diagonal.y * diagonal.z) * 2.f;
+        }
     };
 }

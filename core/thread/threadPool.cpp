@@ -7,6 +7,12 @@ namespace pt
     {
         while (master->mAlive)
         {
+            if(master->mTasks.empty())
+            {
+                // 解决工作线程空转问题, 防止与BVH构建线程竞争
+                std::this_thread::sleep_for(std::chrono::milliseconds(2));
+                continue;
+            }
             Task *task = master->GetTask();
             if (task != nullptr)
             {
