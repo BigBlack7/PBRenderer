@@ -1,20 +1,13 @@
 ﻿#pragma once
-#include "shape.hpp"
+#include "accelerate/sceneBVH.hpp"
 
 namespace pt
 {
-    struct ShapeInfo
-    {
-        const Shape &__shape__;
-        Material __material__;
-        glm::mat4 __worldFromObject__;
-        glm::mat4 __objectFromWorld__;
-    };
-
     struct Scene : public Shape
     {
     private:
         std::vector<ShapeInfo> __shapeInfos__;
+        SceneBVH __sceneBVH__;
 
     public:
         void AddShape(
@@ -28,5 +21,7 @@ namespace pt
             const Ray &ray,
             float t_min = 1e-5,
             float t_max = std::numeric_limits<float>::infinity()) const override;
+
+        void Build() { __sceneBVH__.Build(std::move(__shapeInfos__)); }
     };
 }

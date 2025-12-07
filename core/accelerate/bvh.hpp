@@ -20,9 +20,7 @@ namespace pt
             __bounds__ = {};
             for (const auto &triangle : __triangles__)
             {
-                __bounds__.Expand(triangle.__p0__);
-                __bounds__.Expand(triangle.__p1__);
-                __bounds__.Expand(triangle.__p2__);
+                __bounds__.Expand(triangle.GetBounds());
             }
         }
     };
@@ -37,7 +35,6 @@ namespace pt
             int __triangleIdx__;
         };
         uint16_t __triangleCount__;
-        uint8_t __depth__;
         uint8_t __splitAxis__;
     };
 
@@ -47,12 +44,14 @@ namespace pt
         size_t __totalNodeCount__{};
         size_t __leafNodeCount__{};
         size_t __maxLeafNodeTriangleCount__{};
+        size_t __maxTreeDepth__{};
 
     public:
         void AddLeafNode(BVHTreeNode *node)
         {
             __leafNodeCount__++;
             __maxLeafNodeTriangleCount__ = glm::max(__maxLeafNodeTriangleCount__, node->__triangles__.size());
+            __maxTreeDepth__ = glm::max(__maxTreeDepth__, node->__depth__);
         }
     };
 
@@ -64,7 +63,7 @@ namespace pt
 
     public:
         BVHTreeNodeAllocator() : mPtr(4096) {}
-        
+
         BVHTreeNode *Allocate()
         {
             if (mPtr == 4096)
@@ -90,6 +89,7 @@ namespace pt
     public:
         void Build(std::vector<Triangle> &&triangles);
         std::optional<HitInfo> Intersect(const Ray &ray, float t_min, float t_max) const override;
+        Bounds GetBounds() const override { return mNodes[0].__bounds__; }
 
     private:
         void RecursiveSplitByAxis(BVHTreeNode *node, BVHState &state);

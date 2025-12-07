@@ -28,10 +28,29 @@ namespace pt
         bool HasIntersection(const Ray &ray, float t_min, float t_max) const;
         bool HasIntersection(const Ray &ray, const glm::vec3 &inv_dir, float t_min, float t_max) const;
         glm::vec3 GetDiagonal() const { return __bMax__ - __bMin__; }
-        float GetSurfaceArea() const 
+
+        float GetSurfaceArea() const
         {
             auto diagonal = GetDiagonal();
             return (diagonal.x * (diagonal.y + diagonal.z) + diagonal.y * diagonal.z) * 2.f;
+        }
+
+        glm::vec3 GetCorner(size_t idx) const
+        {
+            auto corner = __bMax__;
+            if ((idx & 0b1) == 0)
+                corner.x = __bMin__.x;
+            if ((idx & 0b10) == 0)
+                corner.y = __bMin__.y;
+            if ((idx & 0b100) == 0)
+                corner.z = __bMin__.z;
+            return corner;
+        }
+
+        // 判断是否为一个退化的Bounds
+        bool IsValid()const
+        {
+            return __bMax__.x >= __bMin__.x && __bMax__.y >= __bMin__.y && __bMax__.z >= __bMin__.z;
         }
     };
 }

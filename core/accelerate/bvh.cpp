@@ -19,6 +19,7 @@ namespace pt
         PBRT_INFO("Triangle Count: {}", triangle_count);
         PBRT_INFO("Mean Leaf Node Triangle Count: {}", static_cast<float>(triangle_count) / static_cast<float>(state.__leafNodeCount__));
         PBRT_INFO("Max Leaf Node Triangle Count: {}", state.__maxLeafNodeTriangleCount__);
+        PBRT_INFO("Max Tree Depth: {}", state.__maxTreeDepth__);
 
         // 预分配内存
         mNodes.reserve(state.__totalNodeCount__);
@@ -86,8 +87,6 @@ namespace pt
                     {
                         t_max = hit_info->__t__;
                         closest_hit_info = hit_info;
-
-                        DEBUG_INFO(closest_hit_info->__boundsDepth__ = node.__depth__)
                     }
                 }
 
@@ -97,11 +96,8 @@ namespace pt
             }
         }
 
-        if (closest_hit_info.has_value())
-        {
-            DEBUG_INFO(closest_hit_info->__boundsTestCount__ = bounds_test_count)
-            DEBUG_INFO(closest_hit_info->__triangleTestCount__ = triangle_test_count)
-        }
+        DEBUG_INFO(ray.__boundsTestCount__ = bounds_test_count)
+        DEBUG_INFO(ray.__triangleTestCount__ = triangle_test_count)
 
         return closest_hit_info;
     }
@@ -343,7 +339,6 @@ namespace pt
             node->__bounds__,
             0,
             static_cast<uint16_t>(node->__triangles__.size()),
-            static_cast<uint8_t>(node->__depth__),
             static_cast<uint8_t>(node->__splitAxis__)};
 
         auto idx = mNodes.size();

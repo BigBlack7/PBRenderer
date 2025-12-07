@@ -8,7 +8,8 @@ namespace pt
         auto ray = mCamera.GenerateRay(pixel_coord, {glm::abs(mRng.Uniform()), glm::abs(mRng.Uniform())});
         glm::vec3 beta = {1.f, 1.f, 1.f};
         glm::vec3 color = {0.f, 0.f, 0.f};
-        while (true)
+        size_t max_bounce_count = 32;
+        while (max_bounce_count--)
         {
             auto hit_info = mScene.Intersect(ray);
             if(hit_info.has_value())

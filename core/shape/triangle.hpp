@@ -22,6 +22,14 @@ namespace pt
         }
 
         std::optional<HitInfo> Intersect(const Ray &ray, float t_min, float t_max) const override;
+        Bounds GetBounds() const override 
+        {
+            Bounds bounds{};
+            bounds.Expand(__p0__);
+            bounds.Expand(__p1__);
+            bounds.Expand(__p2__);
+            return bounds;
+        }
 
     public:
         glm::vec3 __p0__, __p1__, __p2__;

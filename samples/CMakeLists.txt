@@ -1,1 +1,2 @@
 ﻿add_subdirectory(EasyTracer)
+add_subdirectory(MultiDragon)
