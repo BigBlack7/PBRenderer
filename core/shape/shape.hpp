@@ -3,7 +3,7 @@
 #include "accelerate/bounds.hpp"
 #include <optional>
 
-namespace pt
+namespace pbrt
 {
     struct Shape
     {

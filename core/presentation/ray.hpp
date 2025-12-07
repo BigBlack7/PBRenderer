@@ -4,7 +4,7 @@
 #include "utils/debugMacro.hpp"
 #include <glm/glm.hpp>
 
-namespace pt
+namespace pbrt
 {
     struct Ray
     {

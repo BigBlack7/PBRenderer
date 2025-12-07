@@ -2,13 +2,13 @@
 #include "bounds.hpp"
 #include "shape/shape.hpp"
 
-namespace pt
+namespace pbrt
 {
     struct ShapeInfo
     {
     public:
         const Shape &__shape__;
-        Material __material__;
+        const Material *__material__;
         glm::mat4 __worldFromObject__;
         glm::mat4 __objectFromWorld__;
         Bounds __bounds__{};

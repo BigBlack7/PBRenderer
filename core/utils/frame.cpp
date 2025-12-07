@@ -1,10 +1,10 @@
 ﻿#include "frame.hpp"
 
-namespace pt
+namespace pbrt
 {
     Frame::Frame(const glm::vec3 &normal)
     {
-        mY = normal;
+        mY = glm::normalize(normal);
         glm::vec3 up = glm::abs(normal.y) < 0.99999 ? glm::vec3(0, 1, 0) : glm::vec3(0, 0, 1);
         mX = glm::normalize(glm::cross(up, normal));
         mZ = glm::normalize(glm::cross(mX, mY));

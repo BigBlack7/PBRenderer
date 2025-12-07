@@ -1,7 +1,7 @@
 ﻿#pragma once
 #include <glm/glm.hpp>
 #include <array>
-namespace pt
+namespace pbrt
 {
     class RGB Lerp(const RGB &a, const RGB &b, float t);
 

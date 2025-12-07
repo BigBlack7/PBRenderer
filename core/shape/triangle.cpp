@@ -1,6 +1,6 @@
 ﻿#include "triangle.hpp"
 
-namespace pt
+namespace pbrt
 {
     std::optional<HitInfo> Triangle::Intersect(const Ray &ray, float t_min, float t_max) const
     {

@@ -2,7 +2,7 @@
 #include "thread/threadPool.hpp"
 #include "utils/progress.hpp"
 
-namespace pt
+namespace pbrt
 {
     void Renderer::Render(const std::filesystem::path &filename, size_t spp)
     {
@@ -10,16 +10,15 @@ namespace pt
         auto &film = mCamera.GetFilm();
         film.Clear();
         Progress progress(film.GetWidth() * film.GetHeight() * spp);
-        while(current_spp < spp)
+        while (current_spp < spp)
         {
             threadPool.ParallelFor(film.GetWidth(), film.GetHeight(), [&](size_t x, size_t y)
-            {
+                                   {
                 for(int i = 0; i < increase; i++)
                 {
-                    film.AddSample(x, y, RenderPixel({x, y}));
+                    film.AddSample(x, y, RenderPixel({x, y, current_spp + i}));
                 }
-                progress.Update(increase);
-            });
+                progress.Update(increase); });
             threadPool.Wait();
             current_spp += increase;
             increase = std::min<size_t>(current_spp, 32);

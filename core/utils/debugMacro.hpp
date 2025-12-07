@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-namespace pt
+namespace pbrt
 {
 #ifdef WITH_DEBUG_INFO
 #define DEBUG_INFO(...) __VA_ARGS__;

@@ -1,6 +1,6 @@
 ﻿#include "sphere.hpp"
 
-namespace pt
+namespace pbrt
 {
     std::optional<HitInfo> Sphere::Intersect(const Ray &ray, float t_min, float t_max) const
     {

@@ -2,7 +2,7 @@
 
 #include "renderer.hpp"
 
-namespace pt
+namespace pbrt
 {
     DEFINE_RENDERER(BTC)
     DEFINE_RENDERER(TTC)

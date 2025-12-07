@@ -1,9 +1,9 @@
 ﻿#include "scene.hpp"
 #include <glm/gtc/matrix_transform.hpp>
 
-namespace pt
+namespace pbrt
 {
-    void Scene::AddShape(const Shape &shape, const Material &material, const glm::vec3 &position, const glm::vec3 &scale, const glm::vec3 &rotate)
+    void Scene::AddShape(const Shape &shape, const Material *material, const glm::vec3 &position, const glm::vec3 &scale, const glm::vec3 &rotate)
     {
         // 对象空间到世界空间的变换矩阵
         // 约定向量都为列向量, 矩阵乘法即变换顺序从右往左

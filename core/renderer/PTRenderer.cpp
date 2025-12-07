@@ -1,22 +1,27 @@
-﻿#include "RTRenderer.hpp"
+﻿#include "PTRenderer.hpp"
 #include "utils/frame.hpp"
 #include "utils/rng.hpp"
 
 namespace pbrt
 {
-    glm::vec3 RTRenderer::RenderPixel(const glm::ivec3 &pixel_coord)
+    glm::vec3 PTRenderer::RenderPixel(const glm::ivec3 &pixel_coord)
     {
         thread_local RNG rng{static_cast<size_t>(pixel_coord.x * 1000000 + pixel_coord.y + pixel_coord.z * 10000000)};
-        auto ray = mCamera.GenerateRay(pixel_coord, {glm::abs(rng.Uniform()), glm::abs(rng.Uniform())});
+        auto ray = mCamera.GenerateRay(pixel_coord, {rng.Uniform(), rng.Uniform()});
         glm::vec3 beta = {1.f, 1.f, 1.f};
-        glm::vec3 color = {0.f, 0.f, 0.f};
-        size_t max_bounce_count = 32;
-        while (max_bounce_count--)
+        glm::vec3 radiance = {0.f, 0.f, 0.f};
+        float q = 0.9f;
+        while (true)
         {
             auto hit_info = mScene.Intersect(ray);
             if (hit_info.has_value())
             {
-                color += beta * hit_info->__material__->mEmission;
+                radiance += beta * hit_info->__material__->mEmission;
+                if (rng.Uniform() > q)
+                {
+                    break;
+                }
+                beta /= q;
                 Frame frame(hit_info->__normal__);
                 glm::vec3 light_dir;
 
@@ -44,6 +49,7 @@ namespace pbrt
                 break;
             }
         }
-        return color;
+
+        return radiance;
     }
 }

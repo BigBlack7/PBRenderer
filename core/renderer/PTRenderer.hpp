@@ -3,5 +3,5 @@
 
 namespace pbrt
 {
-    DEFINE_RENDERER(Normal)
+    DEFINE_RENDERER(PT)
 }

@@ -1,8 +1,8 @@
 ﻿#include "normalRenderer.hpp"
 
-namespace pt
+namespace pbrt
 {
-    glm::vec3 NormalRenderer::RenderPixel(const glm::ivec2 &pixel_coord)
+    glm::vec3 NormalRenderer::RenderPixel(const glm::ivec3 &pixel_coord)
     {
         auto ray = mCamera.GenerateRay(pixel_coord);
         auto hit_info = mScene.Intersect(ray);

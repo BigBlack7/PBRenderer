@@ -3,7 +3,7 @@
 #include "film.hpp"
 #include "ray.hpp"
 
-namespace pt
+namespace pbrt
 {
     class Camera
     {

@@ -1,7 +1,7 @@
 ﻿#include "profile.hpp"
 #include "utils/logger.hpp"
 
-namespace pt
+namespace pbrt
 {
     Profile::Profile(const std::string &name) : __name__(name), __start__(std::chrono::high_resolution_clock::now()) {}
 

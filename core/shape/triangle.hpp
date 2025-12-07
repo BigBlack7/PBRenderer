@@ -2,7 +2,7 @@
 
 #include "shape.hpp"
 
-namespace pt
+namespace pbrt
 {
     struct Triangle : public Shape
     {
@@ -22,7 +22,7 @@ namespace pt
         }
 
         std::optional<HitInfo> Intersect(const Ray &ray, float t_min, float t_max) const override;
-        Bounds GetBounds() const override 
+        Bounds GetBounds() const override
         {
             Bounds bounds{};
             bounds.Expand(__p0__);

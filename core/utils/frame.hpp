@@ -2,7 +2,7 @@
 
 #include <glm/glm.hpp>
 
-namespace pt
+namespace pbrt
 {
     // 局部坐标系用以反射空间计算
     class Frame

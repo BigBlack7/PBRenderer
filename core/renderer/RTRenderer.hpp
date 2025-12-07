@@ -1,7 +1,7 @@
 ﻿#pragma once
 #include "renderer.hpp"
 
-namespace pt
+namespace pbrt
 {
     DEFINE_RENDERER(RT)
 }

@@ -2,16 +2,16 @@
 #include "utils/debugMacro.hpp"
 #include "utils/logger.hpp"
 #include <array>
-namespace pt
+namespace pbrt
 {
     void SceneBVH::Build(std::vector<ShapeInfo> &&shapeInfos)
     {
         auto *root = mNodeAllocator.Allocate();
 
         auto shapeInfos_temp = std::move(shapeInfos);
-        for(auto &shapeInfo:shapeInfos_temp)
+        for (auto &shapeInfo : shapeInfos_temp)
         {
-            if(shapeInfo.__shape__.GetBounds().IsValid())
+            if (shapeInfo.__shape__.GetBounds().IsValid())
             {
                 shapeInfo.UpdateBounds();
                 root->__shapeInfos__.push_back(shapeInfo);
@@ -28,12 +28,12 @@ namespace pt
         size_t shapeInfo_count = root->__shapeInfos__.size();
         RecursiveSplitBySAHB(root, state);
 
-        PBRT_INFO("Total Node Count: {}", state.__totalNodeCount__);
-        PBRT_INFO("Leaf Node Count: {}", state.__leafNodeCount__);
+        PBRT_INFO("Total Scene Node Count: {}", state.__totalNodeCount__);
+        PBRT_INFO("Scene Leaf Node Count: {}", state.__leafNodeCount__);
         PBRT_INFO("ShapeInfo Count: {}", shapeInfo_count);
-        PBRT_INFO("Mean Leaf Node ShapeInfo Count: {}", static_cast<float>(shapeInfo_count) / static_cast<float>(state.__leafNodeCount__));
-        PBRT_INFO("Max Leaf Node ShapeInfo Count: {}", state.__maxLeafNodeShapeInfoCount__);
-        PBRT_INFO("Max Tree Depth: {}", state.__maxTreeDepth__);
+        PBRT_INFO("Mean Scene Leaf Node ShapeInfo Count: {}", static_cast<float>(shapeInfo_count) / static_cast<float>(state.__leafNodeCount__));
+        PBRT_INFO("Max Scene Leaf Node ShapeInfo Count: {}", state.__maxLeafNodeShapeInfoCount__);
+        PBRT_INFO("Max Scene Tree Depth: {}", state.__maxTreeDepth__);
 
         // 预分配内存
         mNodes.reserve(state.__totalNodeCount__);
@@ -129,7 +129,7 @@ namespace pt
         {
             closest_hit_info->__hitPoint__ = closest_shapeInfo->__worldFromObject__ * glm::vec4(closest_hit_info->__hitPoint__, 1.f);
             closest_hit_info->__normal__ = glm::normalize(glm::vec3(glm::transpose(closest_shapeInfo->__objectFromWorld__) * glm::vec4(closest_hit_info->__normal__, 0.f)));
-            closest_hit_info->__material__ = &closest_shapeInfo->__material__;
+            closest_hit_info->__material__ = closest_shapeInfo->__material__;
         }
 
         DEBUG_INFO(ray.__boundsTestCount__ = bounds_test_count)

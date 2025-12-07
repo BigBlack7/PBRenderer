@@ -5,7 +5,7 @@
 #include <vector>
 #include <filesystem>
 
-namespace pt
+namespace pbrt
 {
     class Model : public Shape
     {

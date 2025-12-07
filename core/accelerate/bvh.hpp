@@ -2,7 +2,7 @@
 #include "bounds.hpp"
 #include "shape/triangle.hpp"
 
-namespace pt
+namespace pbrt
 {
     struct BVHTreeNode
     {

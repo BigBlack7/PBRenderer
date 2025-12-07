@@ -2,7 +2,7 @@
 #include <windows.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 
-namespace pt
+namespace pbrt
 {
     std::shared_ptr<spdlog::logger> Logger::mLogger;
 

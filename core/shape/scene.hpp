@@ -1,7 +1,7 @@
 ﻿#pragma once
 #include "accelerate/sceneBVH.hpp"
 
-namespace pt
+namespace pbrt
 {
     struct Scene : public Shape
     {
@@ -12,7 +12,7 @@ namespace pt
     public:
         void AddShape(
             const Shape &shape,
-            const Material &material = {},
+            const Material *material = nullptr,
             const glm::vec3 &position = {0.f, 0.f, 0.f},
             const glm::vec3 &scale = {1.f, 1.f, 1.f},
             const glm::vec3 &rotate = {0.f, 0.f, 0.f});

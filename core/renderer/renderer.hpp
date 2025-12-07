@@ -1,15 +1,14 @@
 ﻿#pragma once
 #include "presentation/camera.hpp"
 #include "shape/scene.hpp"
-#include "utils/rng.hpp"
 
-namespace pt
+namespace pbrt
 {
 #define DEFINE_RENDERER(Name)                                                           \
     class Name##Renderer : public Renderer                                              \
     {                                                                                   \
     private:                                                                            \
-        glm::vec3 RenderPixel(const glm::ivec2 &pixel_coord) override;                  \
+        glm::vec3 RenderPixel(const glm::ivec3 &pixel_coord) override;                  \
                                                                                         \
     public:                                                                             \
         Name##Renderer(Camera &camera, const Scene &scene) : Renderer(camera, scene) {} \
@@ -20,13 +19,12 @@ namespace pt
     protected:
         Camera &mCamera;
         const Scene &mScene;
-        RNG mRng{};
 
     public:
         Renderer(Camera &camera, const Scene &scene) : mCamera(camera), mScene(scene) {}
 
         void Render(const std::filesystem::path &filename, size_t spp);
 
-        virtual glm::vec3 RenderPixel(const glm::ivec2 &pixel_coord) = 0;
+        virtual glm::vec3 RenderPixel(const glm::ivec3 &pixel_coord) = 0;
     };
 }

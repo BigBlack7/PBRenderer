@@ -1,13 +1,13 @@
 ﻿#include "threadPool.hpp"
 
-namespace pt
+namespace pbrt
 {
     ThreadPool threadPool{};
     void ThreadPool::WorkerThread(ThreadPool *master)
     {
         while (master->mAlive)
         {
-            if(master->mTasks.empty())
+            if (master->mTasks.empty())
             {
                 // 解决工作线程空转问题, 防止与BVH构建线程竞争
                 std::this_thread::sleep_for(std::chrono::milliseconds(2));
@@ -83,8 +83,8 @@ namespace pt
 
         // 将大量任务分块, 减少new Task的次数
         float chunk_width_float = static_cast<float>(width) / std::sqrt(mThreads.size());
-        float chunk_height_float = static_cast<float>(height)  / std::sqrt(mThreads.size());
-        if(isComplex)
+        float chunk_height_float = static_cast<float>(height) / std::sqrt(mThreads.size());
+        if (isComplex)
         {
             chunk_width_float /= std::sqrt(16);
             chunk_height_float /= std::sqrt(16);

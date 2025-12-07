@@ -3,7 +3,7 @@
 #include <atomic>
 #include <thread>
 
-namespace pt
+namespace pbrt
 {
     class SpinLock
     {

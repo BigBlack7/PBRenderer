@@ -2,7 +2,7 @@
 #include "progress.hpp"
 #include "logger.hpp"
 
-namespace pt
+namespace pbrt
 {
     Progress::Progress(size_t total, size_t step) : mTotal(total), mCurrent(0), mPercent(0), mLastPercent(0), mStep(step)
     {

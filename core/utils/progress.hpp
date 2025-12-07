@@ -2,7 +2,7 @@
 
 #include "thread/threadPool.hpp"
 
-namespace pt
+namespace pbrt
 {
     class Progress
     {

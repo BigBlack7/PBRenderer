@@ -1,7 +1,7 @@
 ﻿#pragma once
 #include "shape.hpp"
 
-namespace pt
+namespace pbrt
 {
     struct Plane : public Shape
     {

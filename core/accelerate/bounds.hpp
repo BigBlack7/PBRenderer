@@ -1,7 +1,7 @@
 ﻿#pragma once
 #include "presentation/ray.hpp"
 
-namespace pt
+namespace pbrt
 {
     struct Bounds
     {
@@ -48,7 +48,7 @@ namespace pt
         }
 
         // 判断是否为一个退化的Bounds
-        bool IsValid()const
+        bool IsValid() const
         {
             return __bMax__.x >= __bMin__.x && __bMax__.y >= __bMin__.y && __bMax__.z >= __bMin__.z;
         }

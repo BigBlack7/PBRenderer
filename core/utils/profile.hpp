@@ -3,7 +3,7 @@
 #include <chrono>
 #include <string>
 
-namespace pt
+namespace pbrt
 {
 #define PROFILE(name) Profile __profile__(name);
 

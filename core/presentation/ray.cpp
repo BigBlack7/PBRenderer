@@ -1,6 +1,6 @@
 ﻿#include "ray.hpp"
 
-namespace pt
+namespace pbrt
 {
     Ray Ray::ObjectFromWorld(const glm::mat4 &object_from_world) const
     {

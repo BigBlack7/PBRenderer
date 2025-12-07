@@ -2,7 +2,7 @@
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/matrix_transform.hpp>
 
-namespace pt
+namespace pbrt
 {
     Camera::Camera(Film &film, const glm::vec3 &position, const glm::vec3 &viewpoint, float fovy)
         : mFilm(film), mPosition(position)

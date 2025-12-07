@@ -6,7 +6,7 @@
 #include <queue>
 #include <functional>
 
-namespace pt
+namespace pbrt
 {
     class Task
     {

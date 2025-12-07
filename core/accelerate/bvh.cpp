@@ -2,7 +2,7 @@
 #include "utils/debugMacro.hpp"
 #include "utils/logger.hpp"
 #include <array>
-namespace pt
+namespace pbrt
 {
     void BVH::Build(std::vector<Triangle> &&triangles)
     {
@@ -313,7 +313,7 @@ namespace pt
                 left->__triangles__.push_back(node->__triangles__[idx]);
             }
         }
-        
+
         right->__triangles__.reserve(min_right_triangle_count);
         for (size_t i = min_split_idx; i < bucket_count; i++)
         {

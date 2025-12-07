@@ -2,7 +2,7 @@
 
 #include "shape.hpp"
 
-namespace pt
+namespace pbrt
 {
     struct Sphere : public Shape
     {
