@@ -6,7 +6,8 @@ namespace pbrt
 {
     glm::vec3 PTRenderer::RenderPixel(const glm::ivec3 &pixel_coord)
     {
-        thread_local RNG rng{static_cast<size_t>(pixel_coord.x * 1000000 + pixel_coord.y + pixel_coord.z * 10000000)};
+        thread_local RNG rng{};
+        rng.SetSeed(static_cast<size_t>(pixel_coord.x + pixel_coord.y * 10000 + pixel_coord.z * 10000 * 10000));
         auto ray = mCamera.GenerateRay(pixel_coord, {rng.Uniform(), rng.Uniform()});
         glm::vec3 beta = {1.f, 1.f, 1.f};
         glm::vec3 radiance = {0.f, 0.f, 0.f};

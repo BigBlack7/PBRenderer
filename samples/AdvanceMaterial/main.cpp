@@ -5,6 +5,7 @@
 #include <material/dielectricMaterial.hpp>
 #include <presentation/film.hpp>
 #include <presentation/camera.hpp>
+#include <presentation/previewer.hpp>
 #include <renderer/PTRenderer.hpp>
 #include <shape/sphere.hpp>
 #include <shape/model.hpp>
@@ -19,7 +20,7 @@ int main()
     pbrt::Logger::Init();
     PBRT_INFO("PBRT Init!");
 
-    pbrt::Film film(192 * 5, 108 * 5);
+    pbrt::Film film(1920, 1080);
     pbrt::Camera camera{film, {-10.f, 1.5f, 0.f}, {0.f, 0.f, 0.f}, 45.f};
 
     // models
@@ -49,7 +50,11 @@ int main()
     scene.Build();
 
     pbrt::PTRenderer pt{camera, scene};
-    pt.Render("../../../AdvanceMaterial.ppm", 64);
+    pbrt::Previewer window(pt);
+    if (window.Preview())
+    {
+        pt.Render("../../../AdvanceMaterial.ppm", 64);
+    }
 
     PBRT_INFO("PBRT Shutdown!");
     return 0;

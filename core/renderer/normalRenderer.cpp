@@ -1,4 +1,5 @@
 ﻿#include "normalRenderer.hpp"
+#include "utils/rgb.hpp"
 
 namespace pbrt
 {
@@ -8,7 +9,8 @@ namespace pbrt
         auto hit_info = mScene.Intersect(ray);
         if (hit_info.has_value())
         {
-            return hit_info->__normal__ * 0.5f + 0.5f;
+            glm::ivec3 color = (hit_info->__normal__ * 0.5f + 0.5f) * 255.f;
+            return RGB(color.x, color.y, color.z);
         }
         return {};
     }

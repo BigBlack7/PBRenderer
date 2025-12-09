@@ -24,7 +24,7 @@ namespace pbrt
 
     public:
         Film(size_t width, size_t height);
-        void Save(const std::filesystem::path &filename);
+        void Save(const std::filesystem::path &filename) const;
 
         size_t GetWidth() const { return mWidth; }
         size_t GetHeight() const { return mHeight; }
@@ -45,5 +45,14 @@ namespace pbrt
             mPixels.clear();
             mPixels.resize(mWidth * mHeight);
         }
+
+        void SetResolution(size_t width, size_t height)
+        {
+            mWidth = width;
+            mHeight = height;
+            mPixels.resize(mWidth * mHeight);
+        }
+
+        std::vector<uint8_t> GenerateRGBABuffer();
     };
 }

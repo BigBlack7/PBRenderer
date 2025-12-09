@@ -16,6 +16,8 @@ namespace pbrt
 
     class Renderer
     {
+        friend class Previewer;
+
     protected:
         Camera &mCamera;
         const Scene &mScene;

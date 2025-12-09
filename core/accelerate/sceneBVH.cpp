@@ -132,7 +132,7 @@ namespace pbrt
             closest_hit_info->__material__ = closest_shapeInfo->__material__;
         }
 
-        DEBUG_INFO(ray.__boundsTestCount__ = bounds_test_count)
+        DEBUG_INFO(ray.__boundsTestCount__ += bounds_test_count)
         return closest_hit_info;
     }
 

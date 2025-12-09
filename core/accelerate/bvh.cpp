@@ -96,8 +96,8 @@ namespace pbrt
             }
         }
 
-        DEBUG_INFO(ray.__boundsTestCount__ = bounds_test_count)
-        DEBUG_INFO(ray.__triangleTestCount__ = triangle_test_count)
+        DEBUG_INFO(ray.__boundsTestCount__ += bounds_test_count)
+        DEBUG_INFO(ray.__triangleTestCount__ += triangle_test_count)
 
         return closest_hit_info;
     }

@@ -11,7 +11,32 @@ namespace pbrt
         mPixels.resize(mWidth * mHeight);
     }
 
-    void Film::Save(const std::filesystem::path &filename)
+    std::vector<uint8_t> Film::GenerateRGBABuffer()
+    {
+        std::vector<uint8_t> buffer(mWidth * mHeight * 4);
+
+        for (size_t y = 0; y < mHeight; y++)
+        {
+            for (size_t x = 0; x < mWidth; x++)
+            {
+                auto pixel = GetPixel(x, y);
+                if (pixel.__sampleCount__ == 0)
+                {
+                    continue;
+                }
+                RGB rgb(pixel.__color__ / static_cast<float>(pixel.__sampleCount__));
+                auto index = (y * mWidth + x) * 4;
+                buffer[index + 0] = rgb.mRed;
+                buffer[index + 1] = rgb.mGreen;
+                buffer[index + 2] = rgb.mBlue;
+                buffer[index + 3] = 255;
+            }
+        }
+
+        return buffer;
+    }
+
+    void Film::Save(const std::filesystem::path &filename) const
     {
         std::ofstream file(filename, std::ios::binary);
 
