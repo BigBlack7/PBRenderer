@@ -22,11 +22,17 @@ namespace pbrt
         threadPool.ParallelFor(mWidth, mHeight, [&](size_t x, size_t y)
                                {
             auto pixel = GetPixel(x, y);
+            if (pixel.__sampleCount__ == 0)
+            {
+                return;
+            }
+            
             RGB rgb(pixel.__color__ / static_cast<float>(pixel.__sampleCount__));
             auto idx = (y * mWidth + x) * 3;
             buffer[idx + 0] = rgb.mRed;
             buffer[idx + 1] = rgb.mGreen;
             buffer[idx + 2] = rgb.mBlue; }, false);
+
         threadPool.Wait();
         file.write(reinterpret_cast<const char *>(buffer.data()), buffer.size());
 

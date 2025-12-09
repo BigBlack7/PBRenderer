@@ -28,6 +28,13 @@ namespace pbrt
                 if (hit_info->__material__)
                 {
                     glm::vec3 view_dir = frame.LocalFromWorld(-ray.__direction__);
+
+                    if (view_dir.y == 0)
+                    {
+                        ray.__origin__ = hit_info->__hitPoint__;
+                        continue;
+                    }
+
                     auto bsdf_sample = hit_info->__material__->SampleBSDF(hit_info->__hitPoint__, view_dir, rng);
 
                     if (!bsdf_sample.has_value())

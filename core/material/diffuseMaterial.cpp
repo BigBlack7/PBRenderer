@@ -1,5 +1,5 @@
 ﻿#include "diffuseMaterial.hpp"
-#include "sample/spherical.hpp"
+#include "sampler/spherical.hpp"
 
 namespace pbrt
 {

@@ -1,5 +1,5 @@
 ﻿#include "groundMaterial.hpp"
-#include "sample/spherical.hpp"
+#include "sampler/spherical.hpp"
 
 namespace pbrt
 {
@@ -8,7 +8,7 @@ namespace pbrt
         glm::vec3 light_dir = CosineSampleHemisphere({rng.Uniform(), rng.Uniform()});
         float pdf = CosineSampleHemispherePDF(light_dir);
         glm::vec3 bsdf = mAlbedo * INV_PI;
-        if ((static_cast<int>(glm::floor(hit_point.x * 8)) % 8 == 0) || (static_cast<int>(glm::floor(hit_point.z * 8)) % 8 == 0))
+        if ((static_cast<int>(glm::floor(hit_point.x * 8 + 0.5f)) % 8 == 0) || (static_cast<int>(glm::floor(hit_point.z * 8 + 0.5f)) % 8 == 0))
         {
             bsdf *= 0.1f;
         }

@@ -32,6 +32,10 @@ namespace pbrt
         Pixel GetPixel(size_t x, size_t y) const { return mPixels[y * mWidth + x]; }
         void AddSample(size_t x, size_t y, const glm::vec3 &color)
         {
+            if (glm::any(glm::isnan(color)))
+            {
+                return;
+            }
             mPixels[y * mWidth + x].__color__ += color;
             mPixels[y * mWidth + x].__sampleCount__++;
         }
