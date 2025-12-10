@@ -55,3 +55,6 @@ option(OPENEXR_INSTALL_DOCS "Install OpenEXR docs" OFF)
 option(OPENEXR_BUILD_LIBS "Build OpenEXR libs" ON)
 set(OPENEXR_FORCE_INTERNAL_IMATH ON CACHE BOOL "Force internal Imath" FORCE)
 add_subdirectory(openexr)
+
+# sfmlGUI
+add_subdirectory(imgui)

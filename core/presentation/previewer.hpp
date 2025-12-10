@@ -33,5 +33,10 @@ namespace pbrt
         Previewer(Renderer &renderer, float fps = 30);
         ~Previewer();
         bool Preview();
+
+        sf::RenderWindow &GetWindow() const
+        {
+            return *mWindow;
+        }
     };
 }

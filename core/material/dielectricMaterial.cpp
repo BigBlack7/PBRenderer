@@ -64,8 +64,8 @@ namespace pbrt
 
             float pdf = mMicrofacet.VisibleNormalDistribution(view_dir, microfacet_normal) * det_J;
 
-            // return BSDFSample{btdf / (etai_div_etat * etai_div_etat), pdf, light_dir};
-            return BSDFSample{btdf, pdf, light_dir};
+            return BSDFSample{btdf / (etai_div_etat * etai_div_etat), pdf, light_dir};
+            // return BSDFSample{btdf, pdf, light_dir};
         }
     }
 }
