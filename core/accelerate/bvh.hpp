@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include "bounds.hpp"
 #include "shape/triangle.hpp"
+#include "sampler/aliasTable.hpp"
 
 namespace pbrt
 {
@@ -90,6 +91,8 @@ namespace pbrt
         void Build(std::vector<Triangle> &&triangles);
         std::optional<HitInfo> Intersect(const Ray &ray, float t_min, float t_max) const override;
         Bounds GetBounds() const override { return mNodes[0].__bounds__; }
+        float GetArea() const override { return mArea; }
+        std::optional<ShapeInfo> SampleShape(const RNG &rng) const override;
 
     private:
         void RecursiveSplitByAxis(BVHTreeNode *node, BVHState &state);
@@ -101,5 +104,7 @@ namespace pbrt
         std::vector<BVHNode> mNodes;
         std::vector<Triangle> mOrderedTriangles;
         BVHTreeNodeAllocator mNodeAllocator{};
+        float mArea;
+        AliasTable mTable;
     };
 }

@@ -1,4 +1,5 @@
 ﻿#include "triangle.hpp"
+#include "sampler/spherical.hpp"
 
 namespace pbrt
 {
@@ -31,5 +32,26 @@ namespace pbrt
             return HitInfo{t, hit_point, glm::normalize(normal)};
         }
         return {};
+    }
+
+    float Triangle::GetArea() const
+    {
+        return glm::length(glm::cross(__p2__ - __p0__, __p1__ - __p0__)) * 0.5f;
+    }
+
+    std::optional<ShapeInfo> Triangle::SampleShape(const RNG &rng) const
+    {
+        float u = rng.Uniform(), v = rng.Uniform();
+        if (u > v)
+        {
+            v *= 0.5f;
+            u -= v;
+        }
+        else
+        {
+            u *= 0.5f;
+            v -= u;
+        }
+        return ShapeInfo{u * __p0__ + v * __p1__ + (1.f - u - v) * __p2__, u * __n0__ + v * __n1__ + (1.f - u - v) * __n2__, 1.f / GetArea()};
     }
 }

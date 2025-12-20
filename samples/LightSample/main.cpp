@@ -20,7 +20,7 @@ int main()
     pbrt::Logger::Init();
     PBRT_INFO("PBRT Init!");
 
-    pbrt::Film film(192 * 4, 108 * 4);
+    pbrt::Film film(1920, 1080);
     pbrt::Camera camera{film, {-10.f, 1.5f, 0.f}, {0.f, 0.f, 0.f}, 45.f};
 
     // models
@@ -45,15 +45,18 @@ int main()
 
     scene.AddShape(plane, new pbrt::GroundMaterial{pbrt::RGB(120, 204, 157)}, {0.f, -0.5f, 0.f});
 
-    pbrt::AreaLight *area_light = new pbrt::AreaLight{plane, {0.95f * 5.f, 0.95f * 5.f, 5.f}, false};
+    pbrt::Sphere light{{-2.f, 6.f, 0.f}, 0.5f};
+    pbrt::AreaLight *area_light = new pbrt::AreaLight{light, {0.95f * 100.f, 0.95f * 100.f, 100.f}, false};
+    scene.AddInfiniteLight(new pbrt::InfiniteLight{{0.9f, 0.9f, 0.7f}});
     scene.AddAreaLight(area_light, new pbrt::DiffuseMaterial{});
+
     scene.Build();
 
     pbrt::PTRenderer pt{camera, scene};
-    pbrt::Previewer previewer(pt);
+    pbrt::Previewer previewer(pt, 1);
     if (previewer.Preview())
     {
-        pt.Render("../../../AdvanceMaterial.ppm", 64);
+        pt.Render("../../../LightSample.ppm", 64);
     }
 
     PBRT_INFO("PBRT Shutdown!");

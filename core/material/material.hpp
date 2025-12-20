@@ -2,9 +2,10 @@
 #include "utils/rng.hpp"
 #include <glm/glm.hpp>
 #include <optional>
+
 namespace pbrt
 {
-    struct BSDFSample
+    struct BSDFInfo
     {
     public:
         glm::vec3 __bsdf__;
@@ -15,10 +16,11 @@ namespace pbrt
     class Material
     {
     public:
-        glm::vec3 mEmission{0.f, 0.f, 0.f};
+        const class AreaLight *mAreaLight{nullptr}; // 前向声明
 
     public:
-        virtual std::optional<BSDFSample> SampleBSDF(const glm::vec3 &hit_point, const glm::vec3 &view_dir, const RNG &rng) const = 0;
-        void SetEmission(const glm::vec3 &emission) { mEmission = emission; }
+        virtual std::optional<BSDFInfo> SampleBSDF(const glm::vec3 &hit_point, const glm::vec3 &view_dir, const RNG &rng) const = 0;
+        virtual glm::vec3 BSDF(const glm::vec3 &hit_point, const glm::vec3 &light_dir, const glm::vec3 &view_dir) const = 0;
+        virtual bool IsDeltaDistribution() const = 0;
     };
 }

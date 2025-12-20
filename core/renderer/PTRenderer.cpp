@@ -12,12 +12,20 @@ namespace pbrt
         glm::vec3 beta = {1.f, 1.f, 1.f};
         glm::vec3 radiance = {0.f, 0.f, 0.f};
         float q = 0.9f;
+        bool last_is_delta = true;
+        glm::vec3 last_surface_point = ray.__origin__;
+
         while (true)
         {
             auto hit_info = mScene.Intersect(ray);
             if (hit_info.has_value())
             {
-                radiance += beta * hit_info->__material__->mEmission;
+                if (last_is_delta && hit_info->__material__ && hit_info->__material__->mAreaLight)
+                {
+                    radiance += beta * hit_info->__material__->mAreaLight->GetRadiance(last_surface_point, hit_info->__hitPoint__, hit_info->__normal__);
+                }
+                last_surface_point = hit_info->__hitPoint__;
+
                 if (rng.Uniform() > q)
                 {
                     break;
@@ -36,13 +44,32 @@ namespace pbrt
                         continue;
                     }
 
-                    auto bsdf_sample = hit_info->__material__->SampleBSDF(hit_info->__hitPoint__, view_dir, rng);
+                    if (hit_info->__material__->IsDeltaDistribution())
+                    {
+                        last_is_delta = true;
+                    }
+                    else
+                    {
+                        last_is_delta = false;
+                        auto light_sample_info = mScene.GetLightSampler().SampleLight(rng.Uniform());
+                        if (light_sample_info.has_value())
+                        {
+                            auto light_info = light_sample_info->__light__->SampleLight(hit_info->__hitPoint__, mScene.GetRadius(), rng);
+                            if (light_info.has_value() && (!mScene.Intersect({hit_info->__hitPoint__, light_info->__lightPoint__ - hit_info->__hitPoint__}, 1e-5, 1.f - 1e-5)))
+                            {
+                                glm::vec3 light_dir_local = frame.LocalFromWorld(light_info->__direction__);
+                                radiance += beta * hit_info->__material__->BSDF(hit_info->__hitPoint__, light_dir_local, view_dir) * glm::abs(light_dir_local.y) * light_info->__Le__ / (light_info->__pdf__ * light_sample_info->__prob__);
+                            }
+                        }
+                    }
 
-                    if (!bsdf_sample.has_value())
+                    auto bsdf_info = hit_info->__material__->SampleBSDF(hit_info->__hitPoint__, view_dir, rng);
+
+                    if (!bsdf_info.has_value())
                         break;
 
-                    beta *= bsdf_sample->__bsdf__ * glm::abs(bsdf_sample->__lightDirection__.y) / bsdf_sample->__pdf__;
-                    light_dir = bsdf_sample->__lightDirection__;
+                    beta *= bsdf_info->__bsdf__ * glm::abs(bsdf_info->__lightDirection__.y) / bsdf_info->__pdf__;
+                    light_dir = bsdf_info->__lightDirection__;
                 }
                 else
                 {
@@ -54,6 +81,15 @@ namespace pbrt
             }
             else
             {
+                if (last_is_delta)
+                {
+                    for (const auto &light : mScene.GetInfiniteLights())
+                    {
+                        glm::vec3 light_dir_delta = glm::normalize(ray.__direction__);
+                        radiance += beta * light->GetRadiance(last_surface_point, last_surface_point + mScene.GetRadius() * 2.f * ray.__direction__, -light_dir_delta);
+                    }
+                }
+
                 break;
             }
         }

@@ -8,6 +8,7 @@ set(BUILD_SHARED_LIBS OFF)
 
 # compiler options
 if(MSVC)
+    cmake_policy(SET CMP0077 NEW)
     add_compile_options(/MP)
 endif()
 

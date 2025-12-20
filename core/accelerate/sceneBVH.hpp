@@ -4,7 +4,7 @@
 
 namespace pbrt
 {
-    struct ShapeInfo
+    struct ShapeBVHInfo
     {
     public:
         const Shape &__shape__;
@@ -33,7 +33,7 @@ namespace pbrt
     {
     public:
         Bounds __bounds__{};
-        std::vector<ShapeInfo> __shapeInfos__;
+        std::vector<ShapeBVHInfo> __shapeBVHInfos__;
         SceneBVHTreeNode *__children__[2];
 
         size_t __depth__;
@@ -43,9 +43,9 @@ namespace pbrt
         void UpdateBounds()
         {
             __bounds__ = {};
-            for (const auto &shapeInfo : __shapeInfos__)
+            for (const auto &shapeBVHInfo : __shapeBVHInfos__)
             {
-                __bounds__.Expand(shapeInfo.__bounds__);
+                __bounds__.Expand(shapeBVHInfo.__bounds__);
             }
         }
     };
@@ -57,9 +57,9 @@ namespace pbrt
         union
         {
             int __right__;
-            int __shapeInfoIdx__;
+            int __shapeBVHInfoIdx__;
         };
-        uint16_t __shapeInfoCount__;
+        uint16_t __shapeBVHInfoCount__;
         uint8_t __splitAxis__;
     };
 
@@ -68,14 +68,14 @@ namespace pbrt
     public:
         size_t __totalNodeCount__{};
         size_t __leafNodeCount__{};
-        size_t __maxLeafNodeShapeInfoCount__{};
+        size_t __maxLeafNodeShapeBVHInfoCount__{};
         size_t __maxTreeDepth__{};
 
     public:
         void AddLeafNode(SceneBVHTreeNode *node)
         {
             __leafNodeCount__++;
-            __maxLeafNodeShapeInfoCount__ = glm::max(__maxLeafNodeShapeInfoCount__, node->__shapeInfos__.size());
+            __maxLeafNodeShapeBVHInfoCount__ = glm::max(__maxLeafNodeShapeBVHInfoCount__, node->__shapeBVHInfos__.size());
             __maxTreeDepth__ = glm::max(__maxTreeDepth__, node->__depth__);
         }
     };
@@ -112,7 +112,7 @@ namespace pbrt
     class SceneBVH : public Shape
     {
     public:
-        void Build(std::vector<ShapeInfo> &&shapeInfos);
+        void Build(std::vector<ShapeBVHInfo> &&shapeBVHInfos);
         std::optional<HitInfo> Intersect(const Ray &ray, float t_min, float t_max) const override;
         Bounds GetBounds() const override { return mNodes[0].__bounds__; }
 
@@ -122,8 +122,8 @@ namespace pbrt
 
     private:
         std::vector<SceneBVHNode> mNodes;
-        std::vector<ShapeInfo> mOrderedShapeInfos;
-        std::vector<ShapeInfo> mInfinityShapeInfos;
+        std::vector<ShapeBVHInfo> mOrderedShapeBVHInfos;
+        std::vector<ShapeBVHInfo> mInfinityShapeBVHInfos;
         SceneBVHTreeNodeAllocator mNodeAllocator{};
     };
 }

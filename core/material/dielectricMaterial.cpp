@@ -17,11 +17,11 @@ namespace pbrt
         return (r_parl * r_parl + r_perp * r_perp) * 0.5f;
     }
 
-    std::optional<BSDFSample> DielectricMaterial::SampleBSDF(const glm::vec3 &hit_point, const glm::vec3 &view_dir, const RNG &rng) const
+    std::optional<BSDFInfo> DielectricMaterial::SampleBSDF(const glm::vec3 &hit_point, const glm::vec3 &view_dir, const RNG &rng) const
     {
         if (mIOR == 1)
         {
-            return BSDFSample{mAlbedoT / glm::abs(view_dir.y), 1.f, -view_dir};
+            return BSDFInfo{mAlbedoT / glm::abs(view_dir.y), 1.f, -view_dir};
         }
 
         float etai_div_etat = mIOR;
@@ -48,11 +48,11 @@ namespace pbrt
             glm::vec3 light_dir = -view_dir + 2.f * glm::dot(view_dir, microfacet_normal) * microfacet_normal;
             if (mMicrofacet.IsDeltaDistribution())
             {
-                return BSDFSample{mAlbedoR / glm::abs(light_dir.y), 1.f, light_dir};
+                return BSDFInfo{mAlbedoR / glm::abs(light_dir.y), 1.f, light_dir};
             }
             glm::vec3 brdf = mAlbedoR * mMicrofacet.D(microfacet_normal) * mMicrofacet.G2(light_dir, view_dir, microfacet_normal) / glm::abs(4.f * light_dir.y * view_dir.y);
             float pdf = mMicrofacet.VisibleNormalDistribution(view_dir, microfacet_normal) / glm::abs(4.f * glm::dot(view_dir, microfacet_normal));
-            return BSDFSample{brdf, pdf, light_dir};
+            return BSDFInfo{brdf, pdf, light_dir};
         }
         else // 折射
         {
@@ -64,8 +64,52 @@ namespace pbrt
 
             float pdf = mMicrofacet.VisibleNormalDistribution(view_dir, microfacet_normal) * det_J;
 
-            return BSDFSample{btdf / (etai_div_etat * etai_div_etat), pdf, light_dir};
+            return BSDFInfo{btdf / (etai_div_etat * etai_div_etat), pdf, light_dir};
             // return BSDFSample{btdf, pdf, light_dir};
         }
+    }
+
+    glm::vec3 DielectricMaterial::BSDF(const glm::vec3 &hit_point, const glm::vec3 &light_dir, const glm::vec3 &view_dir) const
+    {
+        if (IsDeltaDistribution())
+        {
+            return {};
+        }
+        float lv = light_dir.y * view_dir.y;
+        if (lv == 0.f)
+        {
+            return {};
+        }
+
+        float etai_div_etat = mIOR;
+        float cos_theta_t = view_dir.y;
+        float inverse = 1.f;
+        if (cos_theta_t < 0)
+        {
+            etai_div_etat = 1.f / mIOR;
+            inverse = -1.f;
+            cos_theta_t = -cos_theta_t;
+        }
+
+        float cos_theta_i;
+        float F = Fresnel(etai_div_etat, cos_theta_t, cos_theta_i);
+
+        if (lv < 0.f) // 透射
+        {
+            glm::vec3 microfacet_normal = (light_dir + view_dir / etai_div_etat) * inverse / (cos_theta_t / etai_div_etat - cos_theta_i);
+            float det_J = etai_div_etat * etai_div_etat * glm::abs(glm::dot(light_dir, microfacet_normal)) / glm::pow(glm::abs(glm::dot(view_dir, microfacet_normal)) - etai_div_etat * etai_div_etat * glm::abs(glm::dot(light_dir, microfacet_normal)), 2.f);
+
+            glm::vec3 btdf = (1.f - F) * mAlbedoT * det_J * mMicrofacet.D(microfacet_normal) * mMicrofacet.G2(light_dir, view_dir, microfacet_normal) * glm::abs(glm::dot(view_dir, microfacet_normal) / lv);
+            return btdf / (etai_div_etat * etai_div_etat);
+        }
+
+        // 反射
+        glm::vec3 microfacet_normal = glm::normalize(light_dir + view_dir);
+        if (microfacet_normal.y <= 0.f)
+        {
+            microfacet_normal = -microfacet_normal;
+        }
+        glm::vec3 brdf = F * mAlbedoR * mMicrofacet.D(microfacet_normal) * mMicrofacet.G2(light_dir, view_dir, microfacet_normal) / glm::abs(4.f * lv);
+        return brdf;
     }
 }

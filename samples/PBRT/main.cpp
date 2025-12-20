@@ -1,5 +1,4 @@
 ﻿#include <SFML/Graphics.hpp>
-
 #include <imgui.h>
 #include <imgui-SFML.h>
 
@@ -8,7 +7,7 @@ int main()
     sf::RenderWindow window(
         sf::VideoMode({800, 600}),
         "ImGui + SFML 3 test");
-    window.setFramerateLimit(60);
+    window.setFramerateLimit(240);
 
     if (!ImGui::SFML::Init(window))
         return -1;

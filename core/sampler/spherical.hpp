@@ -40,4 +40,15 @@ namespace pbrt
         }
         return glm::normalize(res);
     }
+
+    inline glm::vec3 UniformSampleSphere(const RNG &rng)
+    {
+        glm::vec3 res;
+        do
+        {
+            res = {rng.Uniform(), rng.Uniform(), rng.Uniform()};
+            res = res * 2.f - 1.f;
+        } while (glm::length(res) > 1.f);
+        return glm::normalize(res);
+    }
 }

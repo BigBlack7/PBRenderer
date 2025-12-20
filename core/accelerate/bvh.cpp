@@ -25,6 +25,16 @@ namespace pbrt
         mNodes.reserve(state.__totalNodeCount__);
         mOrderedTriangles.reserve(triangle_count);
         RecursiveFlatten(root);
+
+        mArea = 0.f;
+        std::vector<float> areas;
+        areas.reserve(mNodes.size());
+        for (const auto &triangle : mOrderedTriangles)
+        {
+            areas.push_back(triangle.GetArea());
+            mArea += areas.back();
+        }
+        mTable.Build(areas);
     }
 
     std::optional<HitInfo> BVH::Intersect(const Ray &ray, float t_min, float t_max) const
@@ -100,6 +110,14 @@ namespace pbrt
         DEBUG_INFO(ray.__triangleTestCount__ += triangle_test_count)
 
         return closest_hit_info;
+    }
+
+    std::optional<ShapeInfo> BVH::SampleShape(const RNG &rng) const
+    {
+        auto sample_result = mTable.Sample(rng.Uniform());
+        const auto &triangle = mOrderedTriangles[sample_result.__idx__];
+        auto triangle_sample = triangle.SampleShape(rng);
+        return ShapeInfo{triangle_sample->__point__, triangle_sample->__normal__, triangle_sample->__pdf__ * sample_result.__prob__};
     }
 
     void BVH::RecursiveSplitByAxis(BVHTreeNode *node, BVHState &state)

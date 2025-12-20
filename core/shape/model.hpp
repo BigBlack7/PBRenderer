@@ -23,5 +23,7 @@ namespace pbrt
 
         std::optional<HitInfo> Intersect(const Ray &ray, float t_min, float t_max) const override;
         Bounds GetBounds() const override { return mBVH.GetBounds(); }
+        float GetArea() const override { return mBVH.GetArea(); }
+        std::optional<ShapeInfo> SampleShape(const RNG &rng) const override { return mBVH.SampleShape(rng); }
     };
 }

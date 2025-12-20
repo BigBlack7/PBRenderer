@@ -1,7 +1,7 @@
-﻿#pragma once
-#include "renderer.hpp"
+﻿// #pragma once
+// #include "renderer.hpp"
 
-namespace pbrt
-{
-    DEFINE_RENDERER(RT)
-}
+// namespace pbrt
+// {
+//     DEFINE_RENDERER(RT)
+// }

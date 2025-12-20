@@ -22,7 +22,7 @@ namespace pbrt
         return F;
     }
 
-    std::optional<BSDFSample> ConductorMaterial::SampleBSDF(const glm::vec3 &hit_point, const glm::vec3 &view_dir, const RNG &rng) const
+    std::optional<BSDFInfo> ConductorMaterial::SampleBSDF(const glm::vec3 &hit_point, const glm::vec3 &view_dir, const RNG &rng) const
     {
         glm::vec3 microfacet_normal{0.f, 1.f, 0.f};
         if (!mMicrofacet.IsDeltaDistribution())
@@ -33,11 +33,34 @@ namespace pbrt
         glm::vec3 light_dir = -view_dir + 2.f * glm::dot(view_dir, microfacet_normal) * microfacet_normal;
         if (mMicrofacet.IsDeltaDistribution())
         {
-            return BSDFSample{F / glm::abs(light_dir.y), 1.f, light_dir};
+            return BSDFInfo{F / glm::abs(light_dir.y), 1.f, light_dir};
         }
 
         glm::vec3 bsdf = F * mMicrofacet.D(microfacet_normal) * mMicrofacet.G2(light_dir, view_dir, microfacet_normal) / glm::abs(4.f * light_dir.y * view_dir.y);
         float pdf = mMicrofacet.VisibleNormalDistribution(view_dir, microfacet_normal) / glm::abs(4.f * glm::dot(view_dir, microfacet_normal));
-        return BSDFSample{bsdf, pdf, light_dir};
+        return BSDFInfo{bsdf, pdf, light_dir};
+    }
+
+    glm::vec3 ConductorMaterial::BSDF(const glm::vec3 &hit_point, const glm::vec3 &light_dir, const glm::vec3 &view_dir) const
+    {
+        if (mMicrofacet.IsDeltaDistribution())
+        {
+            return {};
+        }
+        float lv = light_dir.y * view_dir.y;
+        if (lv <= 0.f)
+        {
+            return {};
+        }
+
+        glm::vec3 microfacet_normal = glm::normalize(light_dir + view_dir);
+        if (microfacet_normal.y <= 0.f)
+        {
+            microfacet_normal = -microfacet_normal;
+        }
+
+        glm::vec3 F = Fresnel(mIOR, mK, glm::abs(glm::dot(view_dir, microfacet_normal)));
+        glm::vec3 bsdf = F * mMicrofacet.D(microfacet_normal) * mMicrofacet.G2(light_dir, view_dir, microfacet_normal) / glm::abs(4.f * lv);
+        return bsdf;
     }
 }

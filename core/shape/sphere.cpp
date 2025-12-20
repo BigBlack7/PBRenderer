@@ -1,4 +1,5 @@
 ﻿#include "sphere.hpp"
+#include "sampler/spherical.hpp"
 
 namespace pbrt
 {
@@ -26,5 +27,16 @@ namespace pbrt
             return HitInfo{hit_t, hit_point, normal};
         }
         return {};
+    }
+
+    float Sphere::GetArea() const
+    {
+        return 4.f * PI * __radius__ * __radius__;
+    }
+
+    std::optional<ShapeInfo> Sphere::SampleShape(const RNG &rng) const
+    {
+        glm::vec3 normal = UniformSampleSphere(rng);
+        return ShapeInfo{__center__ + __radius__ * normal, normal, 1.f / GetArea()};
     }
 }

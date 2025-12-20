@@ -31,6 +31,9 @@ namespace pbrt
             return bounds;
         }
 
+        float GetArea() const override;
+        std::optional<ShapeInfo> SampleShape(const RNG &rng) const override;
+
     public:
         glm::vec3 __p0__, __p1__, __p2__;
         glm::vec3 __n0__, __n1__, __n2__;
