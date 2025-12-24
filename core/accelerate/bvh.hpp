@@ -2,6 +2,7 @@
 #include "bounds.hpp"
 #include "shape/triangle.hpp"
 #include "sampler/aliasTable.hpp"
+#include "thread/spinLock.hpp"
 
 namespace pbrt
 {
@@ -9,21 +10,11 @@ namespace pbrt
     {
     public:
         Bounds __bounds__{};
-        std::vector<Triangle> __triangles__;
+        size_t __start__, __end__;
         BVHTreeNode *__children__[2];
 
         size_t __depth__;
         uint8_t __splitAxis__;
-
-    public:
-        void UpdateBounds()
-        {
-            __bounds__ = {};
-            for (const auto &triangle : __triangles__)
-            {
-                __bounds__.Expand(triangle.GetBounds());
-            }
-        }
     };
 
     struct alignas(32) BVHNode
@@ -42,16 +33,18 @@ namespace pbrt
     struct BVHState
     {
     public:
-        size_t __totalNodeCount__{};
+        std::atomic<size_t> __totalNodeCount__{};
         size_t __leafNodeCount__{};
         size_t __maxLeafNodeTriangleCount__{};
         size_t __maxTreeDepth__{};
+        SpinLock __lock__{};
 
     public:
         void AddLeafNode(BVHTreeNode *node)
         {
+            Guard guard(__lock__);
             __leafNodeCount__++;
-            __maxLeafNodeTriangleCount__ = glm::max(__maxLeafNodeTriangleCount__, node->__triangles__.size());
+            __maxLeafNodeTriangleCount__ = glm::max(__maxLeafNodeTriangleCount__, node->__end__ - node->__start__);
             __maxTreeDepth__ = glm::max(__maxTreeDepth__, node->__depth__);
         }
     };
@@ -61,12 +54,14 @@ namespace pbrt
     private:
         size_t mPtr;
         std::vector<BVHTreeNode *> mNodesList;
+        SpinLock mLock{};
 
     public:
         BVHTreeNodeAllocator() : mPtr(4096) {}
 
         BVHTreeNode *Allocate()
         {
+            Guard guard(mLock);
             if (mPtr == 4096)
             {
                 mNodesList.push_back(new BVHTreeNode[4096]);
@@ -95,15 +90,14 @@ namespace pbrt
         std::optional<ShapeInfo> SampleShape(const RNG &rng) const override;
 
     private:
-        void RecursiveSplitByAxis(BVHTreeNode *node, BVHState &state);
-        void RecursiveSplitBySAH(BVHTreeNode *node, BVHState &state);
-        void RecursiveSplitBySAHB(BVHTreeNode *node, BVHState &state);
+        void RecursiveSplit(BVHTreeNode *node, BVHState &state);
         size_t RecursiveFlatten(BVHTreeNode *node);
 
     private:
         std::vector<BVHNode> mNodes;
         std::vector<Triangle> mOrderedTriangles;
         BVHTreeNodeAllocator mNodeAllocator{};
+        BVHTreeNode *mRoot;
         float mArea;
         AliasTable mTable;
     };

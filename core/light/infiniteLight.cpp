@@ -27,4 +27,9 @@ namespace pbrt
         }
         return 0.25f * INV_PI;
     }
+
+    glm::vec3 InfiniteLight::GetRadiance(const glm::vec3 &surface_point, const glm::vec3 &light_point, const glm::vec3 &normal) const
+    {
+        return mLe;
+    }
 }

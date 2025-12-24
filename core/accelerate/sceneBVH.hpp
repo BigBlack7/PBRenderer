@@ -1,13 +1,14 @@
 ﻿#pragma once
 #include "bounds.hpp"
 #include "shape/shape.hpp"
+#include "thread/threadPool.hpp"
 
 namespace pbrt
 {
     struct ShapeBVHInfo
     {
     public:
-        const Shape &__shape__;
+        const Shape *__shape__;
         const Material *__material__;
         glm::mat4 __worldFromObject__;
         glm::mat4 __objectFromWorld__;
@@ -18,7 +19,7 @@ namespace pbrt
         void UpdateBounds()
         {
             __bounds__ = {};
-            auto bounds_object = __shape__.GetBounds();
+            auto bounds_object = __shape__->GetBounds();
             for (size_t idx = 0; idx < 8; idx++)
             {
                 auto corner_object = bounds_object.GetCorner(idx);
@@ -33,21 +34,11 @@ namespace pbrt
     {
     public:
         Bounds __bounds__{};
-        std::vector<ShapeBVHInfo> __shapeBVHInfos__;
+        size_t __start__, __end__;
         SceneBVHTreeNode *__children__[2];
 
         size_t __depth__;
         uint8_t __splitAxis__;
-
-    public:
-        void UpdateBounds()
-        {
-            __bounds__ = {};
-            for (const auto &shapeBVHInfo : __shapeBVHInfos__)
-            {
-                __bounds__.Expand(shapeBVHInfo.__bounds__);
-            }
-        }
     };
 
     struct alignas(32) SceneBVHNode
@@ -66,16 +57,18 @@ namespace pbrt
     struct SceneBVHState
     {
     public:
-        size_t __totalNodeCount__{};
+        std::atomic<size_t> __totalNodeCount__{};
         size_t __leafNodeCount__{};
         size_t __maxLeafNodeShapeBVHInfoCount__{};
         size_t __maxTreeDepth__{};
+        SpinLock __lock__{};
 
     public:
         void AddLeafNode(SceneBVHTreeNode *node)
         {
+            Guard guard(__lock__);
             __leafNodeCount__++;
-            __maxLeafNodeShapeBVHInfoCount__ = glm::max(__maxLeafNodeShapeBVHInfoCount__, node->__shapeBVHInfos__.size());
+            __maxLeafNodeShapeBVHInfoCount__ = glm::max(__maxLeafNodeShapeBVHInfoCount__, node->__end__ - node->__start__);
             __maxTreeDepth__ = glm::max(__maxTreeDepth__, node->__depth__);
         }
     };
@@ -85,12 +78,14 @@ namespace pbrt
     private:
         size_t mPtr;
         std::vector<SceneBVHTreeNode *> mNodesList;
+        SpinLock mLock{};
 
     public:
         SceneBVHTreeNodeAllocator() : mPtr(4096) {}
 
         SceneBVHTreeNode *Allocate()
         {
+            Guard guard(mLock);
             if (mPtr == 4096)
             {
                 mNodesList.push_back(new SceneBVHTreeNode[4096]);
@@ -117,7 +112,7 @@ namespace pbrt
         Bounds GetBounds() const override { return mNodes[0].__bounds__; }
 
     private:
-        void RecursiveSplitBySAHB(SceneBVHTreeNode *node, SceneBVHState &state);
+        void RecursiveSplit(SceneBVHTreeNode *node, SceneBVHState &state);
         size_t RecursiveFlatten(SceneBVHTreeNode *node);
 
     private:
@@ -125,5 +120,6 @@ namespace pbrt
         std::vector<ShapeBVHInfo> mOrderedShapeBVHInfos;
         std::vector<ShapeBVHInfo> mInfinityShapeBVHInfos;
         SceneBVHTreeNodeAllocator mNodeAllocator{};
+        SceneBVHTreeNode *mRoot;
     };
 }

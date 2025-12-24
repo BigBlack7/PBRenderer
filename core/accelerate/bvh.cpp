@@ -1,30 +1,39 @@
 ﻿#include "bvh.hpp"
 #include "utils/debugMacro.hpp"
 #include "utils/logger.hpp"
+#include "thread/threadPool.hpp"
 #include <array>
+
 namespace pbrt
 {
     void BVH::Build(std::vector<Triangle> &&triangles)
     {
-        auto *root = mNodeAllocator.Allocate();
-        root->__triangles__ = std::move(triangles);
-        root->UpdateBounds();
-        root->__depth__ = 1;
+        mOrderedTriangles = std::move(triangles);
+
+        mRoot = mNodeAllocator.Allocate();
+        mRoot->__start__ = 0;
+        mRoot->__end__ = mOrderedTriangles.size();
+        mRoot->__bounds__ = {};
+        for (const auto &triangle : mOrderedTriangles)
+        {
+            mRoot->__bounds__.Expand(triangle.GetBounds());
+        }
+        mRoot->__depth__ = 1;
+
         BVHState state{};
-        size_t triangle_count = root->__triangles__.size();
-        RecursiveSplitBySAHB(root, state);
+        size_t triangle_count = mOrderedTriangles.size();
+        RecursiveSplit(mRoot, state);
+        threadPool.Wait();
 
-        PBRT_INFO("Total Node Count: {}", state.__totalNodeCount__);
-        PBRT_INFO("Leaf Node Count: {}", state.__leafNodeCount__);
-        PBRT_INFO("Triangle Count: {}", triangle_count);
-        PBRT_INFO("Mean Leaf Node Triangle Count: {}", static_cast<float>(triangle_count) / static_cast<float>(state.__leafNodeCount__));
-        PBRT_INFO("Max Leaf Node Triangle Count: {}", state.__maxLeafNodeTriangleCount__);
-        PBRT_INFO("Max Tree Depth: {}", state.__maxTreeDepth__);
+        PBRT_DEBUG("Total Node Count: {}", (size_t)state.__totalNodeCount__);
+        PBRT_DEBUG("Leaf Node Count: {}", state.__leafNodeCount__);
+        PBRT_DEBUG("Triangle Count: {}", triangle_count);
+        PBRT_DEBUG("Mean Leaf Node Triangle Count: {}", static_cast<float>(triangle_count) / static_cast<float>(state.__leafNodeCount__));
+        PBRT_DEBUG("Max Leaf Node Triangle Count: {}", state.__maxLeafNodeTriangleCount__);
+        PBRT_DEBUG("Max Tree Depth: {}", state.__maxTreeDepth__);
 
-        // 预分配内存
-        mNodes.reserve(state.__totalNodeCount__);
-        mOrderedTriangles.reserve(triangle_count);
-        RecursiveFlatten(root);
+        mNodes.reserve(state.__totalNodeCount__); // 预分配内存
+        RecursiveFlatten(mRoot);
 
         mArea = 0.f;
         std::vector<float> areas;
@@ -120,6 +129,7 @@ namespace pbrt
         return ShapeInfo{triangle_sample->__point__, triangle_sample->__normal__, triangle_sample->__pdf__ * sample_result.__prob__};
     }
 
+    /* BVH Build optimization versions:
     void BVH::RecursiveSplitByAxis(BVHTreeNode *node, BVHState &state)
     {
         state.__totalNodeCount__++;
@@ -350,13 +360,157 @@ namespace pbrt
         RecursiveSplitBySAHB(left, state);
         RecursiveSplitBySAHB(right, state);
     }
+    */
+
+    void BVH::RecursiveSplit(BVHTreeNode *node, BVHState &state)
+    {
+        state.__totalNodeCount__++;
+        if ((node->__end__ - node->__start__ == 1) || (node->__depth__ > 32))
+        {
+            state.AddLeafNode(node);
+            return;
+        }
+
+        auto diagonal = node->__bounds__.GetDiagonal();
+        float min_cost = std::numeric_limits<float>::infinity();
+        size_t min_split_idx = 0;
+        Bounds min_left_bounds{}, min_right_bounds{};
+        size_t min_left_triangle_count = 0, min_right_triangle_count = 0;
+        constexpr size_t bucket_count = 12;
+        for (size_t axis = 0; axis < 3; axis++)
+        {
+            Bounds bucket_bounds[bucket_count] = {};
+            size_t bucket_triangle_count[bucket_count] = {};
+            for (size_t triangle_idx = node->__start__; triangle_idx < node->__end__; triangle_idx++)
+            {
+                Triangle triangle = mOrderedTriangles[triangle_idx];
+                float triangle_center = (triangle.__p0__[axis] + triangle.__p1__[axis] + triangle.__p2__[axis]) / 3.f;
+                size_t bucket_idx = glm::clamp<size_t>(glm::floor((triangle_center - node->__bounds__.__bMin__[axis]) * bucket_count / diagonal[axis]), 0, bucket_count - 1);
+                bucket_bounds[bucket_idx].Expand(triangle.__p0__);
+                bucket_bounds[bucket_idx].Expand(triangle.__p1__);
+                bucket_bounds[bucket_idx].Expand(triangle.__p2__);
+                bucket_triangle_count[bucket_idx]++;
+            }
+
+            Bounds left_bounds = bucket_bounds[0];
+            size_t left_triangle_count = bucket_triangle_count[0];
+            for (size_t i = 1; i <= bucket_count - 1; i++)
+            {
+                Bounds right_bounds{};
+                size_t right_triangle_count = 0;
+                for (size_t j = bucket_count - 1; j >= i; j--)
+                {
+                    right_bounds.Expand(bucket_bounds[j]);
+                    right_triangle_count += bucket_triangle_count[j];
+                }
+                if (right_triangle_count == 0)
+                {
+                    break;
+                }
+                if (left_triangle_count != 0)
+                {
+                    float cost = left_bounds.GetSurfaceArea() * left_triangle_count + right_bounds.GetSurfaceArea() * right_triangle_count;
+                    if (cost < min_cost)
+                    {
+                        min_cost = cost;
+                        node->__splitAxis__ = axis;
+                        min_split_idx = i;
+                        min_left_bounds = left_bounds;
+                        min_right_bounds = right_bounds;
+                        min_left_triangle_count = left_triangle_count;
+                        min_right_triangle_count = right_triangle_count;
+                    }
+                }
+                left_bounds.Expand(bucket_bounds[i]);
+                left_triangle_count += bucket_triangle_count[i];
+            }
+        }
+
+        // 没有找到好的分割轴
+        if (min_split_idx == 0)
+        {
+            state.AddLeafNode(node);
+            return;
+        }
+
+        auto *left = mNodeAllocator.Allocate();
+        auto *right = mNodeAllocator.Allocate();
+        node->__children__[0] = left;
+        node->__children__[1] = right;
+
+        size_t head_ptr = node->__start__;
+        size_t tail_ptr = node->__end__ - 1;
+        while (head_ptr <= tail_ptr)
+        {
+            Triangle triangle_head = mOrderedTriangles[head_ptr];
+            auto triangle_center_head = (triangle_head.__p0__[node->__splitAxis__] + triangle_head.__p1__[node->__splitAxis__] + triangle_head.__p2__[node->__splitAxis__]) / 3.f;
+            size_t bucket_idx_head = glm::clamp<size_t>(glm::floor((triangle_center_head - node->__bounds__.__bMin__[node->__splitAxis__]) * bucket_count / diagonal[node->__splitAxis__]), 0, bucket_count - 1);
+            bool head_is_left = bucket_idx_head < min_split_idx;
+
+            Triangle triangle_tail = mOrderedTriangles[tail_ptr];
+            auto triangle_center_tail = (triangle_tail.__p0__[node->__splitAxis__] + triangle_tail.__p1__[node->__splitAxis__] + triangle_tail.__p2__[node->__splitAxis__]) / 3.f;
+            size_t bucket_idx_tail = glm::clamp<size_t>(glm::floor((triangle_center_tail - node->__bounds__.__bMin__[node->__splitAxis__]) * bucket_count / diagonal[node->__splitAxis__]), 0, bucket_count - 1);
+            bool tail_is_left = bucket_idx_tail < min_split_idx;
+
+            if (head_is_left && tail_is_left)
+            {
+                head_ptr++;
+            }
+            else if ((!head_is_left) && (!tail_is_left))
+            {
+                tail_ptr--;
+            }
+            else if ((!head_is_left) && tail_is_left)
+            {
+                std::swap(mOrderedTriangles[head_ptr], mOrderedTriangles[tail_ptr]);
+                tail_ptr--;
+                head_ptr++;
+            }
+            else
+            {
+                tail_ptr--;
+                head_ptr++;
+            }
+        }
+        left->__start__ = node->__start__;
+        left->__end__ = head_ptr;
+        right->__start__ = left->__end__;
+        right->__end__ = node->__end__;
+        node->__end__ = node->__start__;
+
+        left->__depth__ = node->__depth__ + 1;
+        right->__depth__ = node->__depth__ + 1;
+        left->__bounds__ = min_left_bounds;
+        right->__bounds__ = min_right_bounds;
+
+        if ((right->__end__ - left->__start__) > (128 * 1024))
+        {
+            threadPool.ParallelFor(2, 1, [&, left, right](size_t i, size_t)
+                                   {
+                                       if (i == 0)
+                                       {
+                                           RecursiveSplit(left, state);
+                                       }
+                                       else
+                                       {
+                                           RecursiveSplit(right, state);
+                                       }
+                                       // end
+                                   });
+        }
+        else
+        {
+            RecursiveSplit(left, state);
+            RecursiveSplit(right, state);
+        }
+    }
 
     size_t BVH::RecursiveFlatten(BVHTreeNode *node)
     {
         BVHNode bvh_node{
             node->__bounds__,
             0,
-            static_cast<uint16_t>(node->__triangles__.size()),
+            static_cast<uint16_t>(node->__end__ - node->__start__),
             static_cast<uint8_t>(node->__splitAxis__)};
 
         auto idx = mNodes.size();
@@ -368,11 +522,7 @@ namespace pbrt
         }
         else
         {
-            mNodes[idx].__triangleIdx__ = mOrderedTriangles.size();
-            for (const auto &triangle : node->__triangles__)
-            {
-                mOrderedTriangles.push_back(triangle);
-            }
+            mNodes[idx].__triangleIdx__ = node->__start__;
         }
         return idx;
     }

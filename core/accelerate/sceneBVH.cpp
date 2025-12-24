@@ -2,19 +2,18 @@
 #include "utils/debugMacro.hpp"
 #include "utils/logger.hpp"
 #include <array>
+
 namespace pbrt
 {
     void SceneBVH::Build(std::vector<ShapeBVHInfo> &&shapeBVHInfos)
     {
-        auto *root = mNodeAllocator.Allocate();
-
         auto shapeBVHInfos_temp = std::move(shapeBVHInfos);
         for (auto &shapeBVHInfo : shapeBVHInfos_temp)
         {
-            if (shapeBVHInfo.__shape__.GetBounds().IsValid())
+            if (shapeBVHInfo.__shape__->GetBounds().IsValid())
             {
                 shapeBVHInfo.UpdateBounds();
-                root->__shapeBVHInfos__.push_back(shapeBVHInfo);
+                mOrderedShapeBVHInfos.push_back(shapeBVHInfo);
             }
             else
             {
@@ -22,23 +21,31 @@ namespace pbrt
             }
         }
 
-        root->UpdateBounds();
-        root->__depth__ = 1;
-        SceneBVHState state{};
-        size_t shapeBVHInfo_count = root->__shapeBVHInfos__.size();
-        RecursiveSplitBySAHB(root, state);
+        mRoot = mNodeAllocator.Allocate();
+        mRoot->__start__ = 0;
+        mRoot->__end__ = mOrderedShapeBVHInfos.size();
+        mRoot->__bounds__ = {};
+        for(const auto &shapeBVHInfo : mOrderedShapeBVHInfos)
+        {
+            mRoot->__bounds__ .Expand(shapeBVHInfo.__bounds__);
+        }
+        mRoot->__depth__ = 1;
 
-        PBRT_INFO("Total Scene Node Count: {}", state.__totalNodeCount__);
-        PBRT_INFO("Scene Leaf Node Count: {}", state.__leafNodeCount__);
-        PBRT_INFO("ShapeBVHInfo Count: {}", shapeBVHInfo_count);
-        PBRT_INFO("Mean Scene Leaf Node ShapeBVHInfo Count: {}", static_cast<float>(shapeBVHInfo_count) / static_cast<float>(state.__leafNodeCount__));
-        PBRT_INFO("Max Scene Leaf Node ShapeBVHInfo Count: {}", state.__maxLeafNodeShapeBVHInfoCount__);
-        PBRT_INFO("Max Scene Tree Depth: {}", state.__maxTreeDepth__);
+        SceneBVHState state{};
+        size_t shapeBVHInfo_count = mOrderedShapeBVHInfos.size();
+        RecursiveSplit(mRoot, state);
+        threadPool.Wait();
+
+        PBRT_DEBUG("Total Scene Node Count: {}", (size_t)state.__totalNodeCount__);
+        PBRT_DEBUG("Scene Leaf Node Count: {}", state.__leafNodeCount__);
+        PBRT_DEBUG("ShapeBVHInfo Count: {}", shapeBVHInfo_count);
+        PBRT_DEBUG("Mean Scene Leaf Node ShapeBVHInfo Count: {}", static_cast<float>(shapeBVHInfo_count) / static_cast<float>(state.__leafNodeCount__));
+        PBRT_DEBUG("Max Scene Leaf Node ShapeBVHInfo Count: {}", state.__maxLeafNodeShapeBVHInfoCount__);
+        PBRT_DEBUG("Max Scene Tree Depth: {}", state.__maxTreeDepth__);
 
         // 预分配内存
         mNodes.reserve(state.__totalNodeCount__);
-        mOrderedShapeBVHInfos.reserve(shapeBVHInfo_count);
-        RecursiveFlatten(root);
+        RecursiveFlatten(mRoot);
     }
 
     std::optional<HitInfo> SceneBVH::Intersect(const Ray &ray, float t_min, float t_max) const
@@ -93,7 +100,7 @@ namespace pbrt
                 for (size_t i = 0; i < node.__shapeBVHInfoCount__; i++)
                 {
                     auto ray_object = ray.ObjectFromWorld(shapeBVHInfo_iter->__objectFromWorld__);
-                    auto hit_info = shapeBVHInfo_iter->__shape__.Intersect(ray_object, t_min, t_max);
+                    auto hit_info = shapeBVHInfo_iter->__shape__->Intersect(ray_object, t_min, t_max);
                     DEBUG_INFO(ray.__boundsTestCount__ += ray_object.__boundsTestCount__);
                     DEBUG_INFO(ray.__triangleTestCount__ += ray_object.__triangleTestCount__);
                     if (hit_info)
@@ -114,7 +121,7 @@ namespace pbrt
         for (const auto &infinity_shapeBVHInfo : mInfinityShapeBVHInfos)
         {
             auto ray_object = ray.ObjectFromWorld(infinity_shapeBVHInfo.__objectFromWorld__);
-            auto hit_info = infinity_shapeBVHInfo.__shape__.Intersect(ray_object, t_min, t_max);
+            auto hit_info = infinity_shapeBVHInfo.__shape__->Intersect(ray_object, t_min, t_max);
             DEBUG_INFO(ray.__boundsTestCount__ += ray_object.__boundsTestCount__);
             DEBUG_INFO(ray.__triangleTestCount__ += ray_object.__triangleTestCount__);
             if (hit_info)
@@ -136,10 +143,10 @@ namespace pbrt
         return closest_hit_info;
     }
 
-    void SceneBVH::RecursiveSplitBySAHB(SceneBVHTreeNode *node, SceneBVHState &state)
+    void SceneBVH::RecursiveSplit(SceneBVHTreeNode *node, SceneBVHState &state)
     {
         state.__totalNodeCount__++;
-        if (node->__shapeBVHInfos__.size() == 1 || node->__depth__ > 32)
+        if ((node->__end__ - node->__start__ == 1) || (node->__depth__ > 32))
         {
             state.AddLeafNode(node);
             return;
@@ -151,20 +158,16 @@ namespace pbrt
         Bounds min_left_bounds{}, min_right_bounds{};
         size_t min_left_shapeBVHInfo_count = 0, min_right_shapeBVHInfo_count = 0;
         constexpr size_t bucket_count = 12;
-        std::vector<size_t> bucket_shapeBVHInfo_indices[3][bucket_count] = {};
         for (size_t axis = 0; axis < 3; axis++)
         {
             Bounds bucket_bounds[bucket_count] = {};
             size_t bucket_shapeBVHInfo_count[bucket_count] = {};
-            size_t shapeBVHInfo_idx = 0;
-            for (const auto &shapeBVHInfo : node->__shapeBVHInfos__)
+            for (size_t shapeBVHInfo_idx = node->__start__; shapeBVHInfo_idx < node->__end__; shapeBVHInfo_idx++)
             {
+                const auto &shapeBVHInfo = mOrderedShapeBVHInfos[shapeBVHInfo_idx];
                 size_t bucket_idx = glm::clamp<size_t>(glm::floor((shapeBVHInfo.__center__[axis] - node->__bounds__.__bMin__[axis]) * bucket_count / diagonal[axis]), 0, bucket_count - 1);
-
                 bucket_bounds[bucket_idx].Expand(shapeBVHInfo.__bounds__);
                 bucket_shapeBVHInfo_count[bucket_idx]++;
-                bucket_shapeBVHInfo_indices[axis][bucket_idx].push_back(shapeBVHInfo_idx);
-                shapeBVHInfo_idx++;
             }
 
             Bounds left_bounds = bucket_bounds[0];
@@ -213,32 +216,69 @@ namespace pbrt
         node->__children__[0] = left;
         node->__children__[1] = right;
 
-        left->__shapeBVHInfos__.reserve(min_left_shapeBVHInfo_count);
-        for (size_t i = 0; i < min_split_idx; i++)
+        size_t head_ptr = node->__start__;
+        size_t tail_ptr = node->__end__ - 1;
+        while (head_ptr <= tail_ptr)
         {
-            for (size_t idx : bucket_shapeBVHInfo_indices[node->__splitAxis__][i])
+            const auto &shapeBVHInfo_head = mOrderedShapeBVHInfos[head_ptr];
+            size_t bucket_idx_head = glm::clamp<size_t>(glm::floor((shapeBVHInfo_head.__center__[node->__splitAxis__] - node->__bounds__.__bMin__[node->__splitAxis__]) * bucket_count / diagonal[node->__splitAxis__]), 0, bucket_count - 1);
+            bool head_is_left = bucket_idx_head < min_split_idx;
+
+            const auto &shapeBVHInfo_tail = mOrderedShapeBVHInfos[tail_ptr];
+            size_t bucket_idx_tail = glm::clamp<size_t>(glm::floor((shapeBVHInfo_tail.__center__[node->__splitAxis__] - node->__bounds__.__bMin__[node->__splitAxis__]) * bucket_count / diagonal[node->__splitAxis__]), 0, bucket_count - 1);
+            bool tail_is_left = bucket_idx_tail < min_split_idx;
+
+            if (head_is_left && tail_is_left)
             {
-                left->__shapeBVHInfos__.push_back(node->__shapeBVHInfos__[idx]);
+                head_ptr++;
+            }
+            else if ((!head_is_left) && (!tail_is_left))
+            {
+                tail_ptr--;
+            }
+            else if ((!head_is_left) && tail_is_left)
+            {
+                std::swap(mOrderedShapeBVHInfos[head_ptr], mOrderedShapeBVHInfos[tail_ptr]);
+                tail_ptr--;
+                head_ptr++;
+            }
+            else
+            {
+                tail_ptr--;
+                head_ptr++;
             }
         }
+        left->__start__ = node->__start__;
+        left->__end__ = head_ptr;
+        right->__start__ = left->__end__;
+        right->__end__ = node->__end__;
+        node->__end__ = node->__start__;
 
-        right->__shapeBVHInfos__.reserve(min_right_shapeBVHInfo_count);
-        for (size_t i = min_split_idx; i < bucket_count; i++)
-        {
-            for (size_t idx : bucket_shapeBVHInfo_indices[node->__splitAxis__][i])
-            {
-                right->__shapeBVHInfos__.push_back(node->__shapeBVHInfos__[idx]);
-            }
-        }
-
-        node->__shapeBVHInfos__.clear();
-        node->__shapeBVHInfos__.shrink_to_fit();
         left->__depth__ = node->__depth__ + 1;
         right->__depth__ = node->__depth__ + 1;
         left->__bounds__ = min_left_bounds;
         right->__bounds__ = min_right_bounds;
-        RecursiveSplitBySAHB(left, state);
-        RecursiveSplitBySAHB(right, state);
+
+        if ((right->__end__ - left->__start__) > (128 * 1024))
+        {
+            threadPool.ParallelFor(2, 1, [&, left, right](size_t i, size_t)
+                                   {
+                                       if (i == 0)
+                                       {
+                                           RecursiveSplit(left, state);
+                                       }
+                                       else
+                                       {
+                                           RecursiveSplit(right, state);
+                                       }
+                                       // end
+                                   });
+        }
+        else
+        {
+            RecursiveSplit(left, state);
+            RecursiveSplit(right, state);
+        }
     }
 
     size_t SceneBVH::RecursiveFlatten(SceneBVHTreeNode *node)
@@ -246,7 +286,7 @@ namespace pbrt
         SceneBVHNode SceneBVH_node{
             node->__bounds__,
             0,
-            static_cast<uint16_t>(node->__shapeBVHInfos__.size()),
+            static_cast<uint16_t>(node->__end__ - node->__start__),
             static_cast<uint8_t>(node->__splitAxis__)};
 
         auto idx = mNodes.size();
@@ -258,11 +298,7 @@ namespace pbrt
         }
         else
         {
-            mNodes[idx].__shapeBVHInfoIdx__ = mOrderedShapeBVHInfos.size();
-            for (const auto &shapeBVHInfo : node->__shapeBVHInfos__)
-            {
-                mOrderedShapeBVHInfos.push_back(shapeBVHInfo);
-            }
+            mNodes[idx].__shapeBVHInfoIdx__ = node->__start__;
         }
         return idx;
     }

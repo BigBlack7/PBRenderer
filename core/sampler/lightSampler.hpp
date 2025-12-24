@@ -20,37 +20,25 @@ namespace pbrt
         std::map<const Light *, float> mLightProbs;
         AliasTable mAliasTable;
 
-        std::vector<const Light *> mLightsMISC;
-        std::map<const Light *, float> mLightProbsMISC;
-        AliasTable mAliasTableMISC;
-
     public:
         LightSampler() = default;
 
         void AddLight(const Light *light)
         {
             mLights.push_back(light);
-            if (light->GetLightType() != LightType::Infinite)
-            {
-                mLightsMISC.push_back(light);
-            }
         }
 
         void Build(float scene_radius);
-        std::optional<LightSampleInfo> SampleLight(float u, bool MISC) const;
+        std::optional<LightSampleInfo> SampleLight(float u) const;
 
-        float GetProb(const Light *light, bool MISC) const // PMF
+        float GetProb(const Light *light) const // PMF
         {
-            if (MISC)
+            auto res = mLightProbs.find(light);
+            if (res == mLightProbs.end())
             {
-                if (light->GetLightType()==LightType::Infinite)
-                {
-                    return 0.f;
-                }
-                return mLightProbsMISC.at(light);
+                return 0.f;
             }
-            
-            return mLightProbs.at(light);
+            return res->second;
         }
     };
 }

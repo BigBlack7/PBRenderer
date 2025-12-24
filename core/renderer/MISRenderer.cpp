@@ -20,6 +20,7 @@ namespace pbrt
         float last_bsdf_pdf = 0.f;
         float eta_scale = 1.f;
         bool MISC = true;
+        const LightSampler &lightSampler = mScene.GetLightSampler(MISC);
 
         while (true)
         {
@@ -31,7 +32,7 @@ namespace pbrt
                     float bsdf_weight = 1.f;
                     if (!last_is_delta)
                     {
-                        float light_sample_prob = mScene.GetLightSampler().GetProb(hit_info->__material__->mAreaLight, MISC);
+                        float light_sample_prob = lightSampler.GetProb(hit_info->__material__->mAreaLight);
                         float light_pdf = hit_info->__material__->mAreaLight->PDF(ray.__origin__, hit_info->__hitPoint__, hit_info->__normal__, MISC);
                         float bsdf_weight = PowerHeuristic(last_bsdf_pdf, light_sample_prob * light_pdf);
                     }
@@ -40,6 +41,7 @@ namespace pbrt
 
                 glm::vec3 beta_q = beta * eta_scale;
                 float q = glm::max(beta_q.r, glm::max(beta_q.g, beta_q.b));
+                q = glm::min(q, 0.9f);
                 if (q < 1.f)
                 {
                     if (rng.Uniform() > q)
@@ -65,7 +67,7 @@ namespace pbrt
                     last_is_delta = hit_info->__material__->IsDeltaDistribution();
                     if (!last_is_delta)
                     {
-                        auto light_sample_info = mScene.GetLightSampler().SampleLight(rng.Uniform(), MISC);
+                        auto light_sample_info = lightSampler.SampleLight(rng.Uniform());
                         if (light_sample_info.has_value())
                         {
                             auto light_info = light_sample_info->__light__->SampleLight(hit_info->__hitPoint__, mScene.GetRadius(), rng, MISC);
@@ -113,7 +115,7 @@ namespace pbrt
                 {
                     for (const auto &light : mScene.GetInfiniteLights())
                     {
-                        float light_sample_prob = mScene.GetLightSampler().GetProb(light, MISC);
+                        float light_sample_prob = lightSampler.GetProb(light);
                         float light_pdf = light->PDF(ray.__origin__, light_point, -light_dir_delta, MISC);
                         float bsdf_weight = PowerHeuristic(last_bsdf_pdf, light_sample_prob * light_pdf);
                         radiance += bsdf_weight * beta * light->GetRadiance(ray.__origin__, light_point, -light_dir_delta);

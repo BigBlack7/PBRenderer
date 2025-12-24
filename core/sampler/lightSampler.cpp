@@ -16,33 +16,10 @@ namespace pbrt
         {
             mLightProbs.insert(std::make_pair(mLights[i], probs[i]));
         }
-
-        Phis.clear();
-        for (const auto *light : mLightsMISC)
-        {
-            Phis.push_back(light->Phi(scene_radius));
-        }
-        mAliasTableMISC.Build(Phis);
-        const auto &probsMISC = mAliasTableMISC.GetProbs();
-        for (size_t i = 0; i < mLightsMISC.size(); ++i)
-        {
-            mLightProbsMISC.insert(std::make_pair(mLightsMISC[i], probsMISC[i]));
-        }
     }
 
-    std::optional<LightSampleInfo> LightSampler::SampleLight(float u, bool MISC) const
+    std::optional<LightSampleInfo> LightSampler::SampleLight(float u) const
     {
-        if (MISC)
-        {
-            if (mLightsMISC.empty())
-            {
-                return {};
-            }
-            auto sample_result = mAliasTableMISC.Sample(u);
-            return LightSampleInfo{mLightsMISC[sample_result.__idx__], sample_result.__prob__};
-        }
-        
-
         if (mLights.empty())
         {
             return {};

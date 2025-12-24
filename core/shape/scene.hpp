@@ -12,7 +12,8 @@ namespace pbrt
         std::vector<ShapeBVHInfo> __shapeInfos__;
         SceneBVH __sceneBVH__;
         LightSampler __lightSampler__;
-        std::vector<const InfiniteLight *> __infiniteLights__;
+        LightSampler __lightSamplerMISC__;
+        std::vector<const Light *> __infiniteLights__;
         float __radius__;
 
     public:
@@ -28,11 +29,16 @@ namespace pbrt
             material->mAreaLight = light;
             AddShape(light->GetShape(), material);
             __lightSampler__.AddLight(light);
+            __lightSamplerMISC__.AddLight(light);
         }
 
-        void AddInfiniteLight(const InfiniteLight *light)
+        void AddInfiniteLight(const Light *light)
         {
             __lightSampler__.AddLight(light);
+            if (light->GetLightType() != LightType::Infinite)
+            {
+                __lightSamplerMISC__.AddLight(light);
+            }
             __infiniteLights__.push_back(light);
         }
 
@@ -47,12 +53,13 @@ namespace pbrt
             auto scene_bounds = __sceneBVH__.GetBounds();
             __radius__ = 0.5f * glm::distance(scene_bounds.__bMax__, scene_bounds.__bMin__);
             __lightSampler__.Build(__radius__);
+            __lightSamplerMISC__.Build(__radius__);
         }
 
-        const LightSampler &GetLightSampler() const { return __lightSampler__; }
+        const LightSampler &GetLightSampler(bool MISC) const { return MISC ? __lightSamplerMISC__ : __lightSampler__; }
 
-        float GetRadius() const { return __radius__; } 
+        float GetRadius() const { return __radius__; }
 
-        const std::vector<const InfiniteLight *> &GetInfiniteLights() const { return __infiniteLights__; }
+        const std::vector<const Light *> &GetInfiniteLights() const { return __infiniteLights__; }
     };
 }

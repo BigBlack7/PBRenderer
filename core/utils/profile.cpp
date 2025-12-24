@@ -9,6 +9,6 @@ namespace pbrt
     {
         auto duration = std::chrono::high_resolution_clock::now() - __start__;
         auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
-        PBRT_INFO("Profile {} cost {} ms", __name__, ms);
+        PBRT_DEBUG("Profile {} cost {} ms", __name__, ms);
     }
 }

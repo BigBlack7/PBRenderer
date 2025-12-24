@@ -8,10 +8,11 @@ namespace pbrt
     {
     private:
         const Shape &mShape;
+        glm::vec3 mLe;
         bool mIsTwoSides;
 
     public:
-        AreaLight(const Shape &shape, const glm::vec3 &Le, bool is_two_sides) : Light(Le), mShape(shape), mIsTwoSides(is_two_sides) {}
+        AreaLight(const Shape &shape, const glm::vec3 &Le, bool is_two_sides) : mShape(shape), mLe(Le), mIsTwoSides(is_two_sides) {}
 
         LightType GetLightType() const override { return LightType::Area; }
         float Phi(float scene_radius) const override;

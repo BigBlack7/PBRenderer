@@ -23,17 +23,12 @@ namespace pbrt
 
     class Light
     {
-    protected:
-        glm::vec3 mLe;
-
     public:
-        Light(const glm::vec3 &Le) : mLe(Le) {}
-
         virtual LightType GetLightType() const = 0;
         virtual float Phi(float scene_radius) const = 0; // 光源功率 radiant flux
         virtual std::optional<LightInfo> SampleLight(const glm::vec3 &surface_point, float scene_radius, const RNG &rng, bool MISC) const = 0;
         virtual float PDF(const glm::vec3 &surface_point, const glm::vec3 &light_point, const glm::vec3 &normal, bool MISC) const = 0;
 
-        virtual glm::vec3 GetRadiance(const glm::vec3 &surface_point, const glm::vec3 &light_point, const glm::vec3 &normal) const { return mLe; }
+        virtual glm::vec3 GetRadiance(const glm::vec3 &surface_point, const glm::vec3 &light_point, const glm::vec3 &normal) const = 0;
     };
 }
