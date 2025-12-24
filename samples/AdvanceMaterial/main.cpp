@@ -45,12 +45,13 @@ int main()
 
     scene.AddShape(plane, new pbrt::GroundMaterial{pbrt::RGB(120, 204, 157)}, {0.f, -0.5f, 0.f});
 
-    pbrt::AreaLight *area_light = new pbrt::AreaLight{plane, {0.95f * 5.f, 0.95f * 5.f, 5.f}, false};
+    auto light = new pbrt::Plane{{0.f, 10.f, 0.f}, {0.f, -1.f, 0.f}, 20.f};
+    pbrt::AreaLight *area_light = new pbrt::AreaLight{*light, {0.95f * 5.f, 0.95f * 5.f, 5.f}, false};
     scene.AddAreaLight(area_light, new pbrt::DiffuseMaterial{});
     scene.Build();
 
     pbrt::PTRenderer pt{camera, scene};
-    pbrt::Previewer previewer(pt);
+    pbrt::Previewer previewer(pt, 1);
     if (previewer.Preview())
     {
         pt.Render("../../../AdvanceMaterial.ppm", 64);

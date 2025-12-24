@@ -16,7 +16,7 @@ namespace pbrt
         }
 
         float hit_t = (-b - glm::sqrt(discriminant)) * 0.5f / a;
-        if (hit_t < 0.f)
+        if (hit_t <= t_min)
         {
             hit_t = (-b + glm::sqrt(discriminant)) * 0.5f / a;
         }

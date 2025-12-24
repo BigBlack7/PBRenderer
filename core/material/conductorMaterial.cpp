@@ -63,4 +63,24 @@ namespace pbrt
         glm::vec3 bsdf = F * mMicrofacet.D(microfacet_normal) * mMicrofacet.G2(light_dir, view_dir, microfacet_normal) / glm::abs(4.f * lv);
         return bsdf;
     }
+
+    float ConductorMaterial::PDF(const glm::vec3 &hit_point, const glm::vec3 &light_dir, const glm::vec3 &view_dir) const
+    {
+        if (mMicrofacet.IsDeltaDistribution())
+        {
+            return 0.f;
+        }
+        float lv = light_dir.y * view_dir.y;
+        if (lv <= 0.f)
+        {
+            return 0.f;
+        }
+
+        glm::vec3 microfacet_normal = glm::normalize(light_dir + view_dir);
+        if (microfacet_normal.y <= 0.f)
+        {
+            microfacet_normal = -microfacet_normal;
+        }
+        return mMicrofacet.VisibleNormalDistribution(view_dir, microfacet_normal) / glm::abs(4.f * glm::dot(view_dir, microfacet_normal));
+    }
 }

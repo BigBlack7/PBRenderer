@@ -9,17 +9,17 @@ namespace pbrt
     private:
         struct Item
         {
-            float __q__;
+            double __q__;
             union
             {
                 float __p__;
-                int __alias__;
+                size_t __alias__;
             };
         };
 
         struct SampleResult
         {
-            int __idx__;
+            size_t __idx__;
             float __prob__;
         };
 
@@ -32,5 +32,7 @@ namespace pbrt
 
         void Build(const std::vector<float> &values);
         SampleResult Sample(float u) const;
+
+        const std::vector<float> &GetProbs() const { return mProbs; }
     };
 }

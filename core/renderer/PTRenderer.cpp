@@ -13,7 +13,6 @@ namespace pbrt
         glm::vec3 radiance = {0.f, 0.f, 0.f};
         float q = 0.9f;
         bool last_is_delta = true;
-        glm::vec3 last_surface_point = ray.__origin__;
 
         while (true)
         {
@@ -22,9 +21,8 @@ namespace pbrt
             {
                 if (last_is_delta && hit_info->__material__ && hit_info->__material__->mAreaLight)
                 {
-                    radiance += beta * hit_info->__material__->mAreaLight->GetRadiance(last_surface_point, hit_info->__hitPoint__, hit_info->__normal__);
+                    radiance += beta * hit_info->__material__->mAreaLight->GetRadiance(ray.__origin__, hit_info->__hitPoint__, hit_info->__normal__);
                 }
-                last_surface_point = hit_info->__hitPoint__;
 
                 if (rng.Uniform() > q)
                 {
@@ -44,17 +42,13 @@ namespace pbrt
                         continue;
                     }
 
-                    if (hit_info->__material__->IsDeltaDistribution())
+                    last_is_delta = hit_info->__material__->IsDeltaDistribution();
+                    if (!last_is_delta)
                     {
-                        last_is_delta = true;
-                    }
-                    else
-                    {
-                        last_is_delta = false;
-                        auto light_sample_info = mScene.GetLightSampler().SampleLight(rng.Uniform());
+                        auto light_sample_info = mScene.GetLightSampler().SampleLight(rng.Uniform(), false);
                         if (light_sample_info.has_value())
                         {
-                            auto light_info = light_sample_info->__light__->SampleLight(hit_info->__hitPoint__, mScene.GetRadius(), rng);
+                            auto light_info = light_sample_info->__light__->SampleLight(hit_info->__hitPoint__, mScene.GetRadius(), rng, false);
                             if (light_info.has_value() && (!mScene.Intersect({hit_info->__hitPoint__, light_info->__lightPoint__ - hit_info->__hitPoint__}, 1e-5, 1.f - 1e-5)))
                             {
                                 glm::vec3 light_dir_local = frame.LocalFromWorld(light_info->__direction__);
@@ -86,7 +80,7 @@ namespace pbrt
                     for (const auto &light : mScene.GetInfiniteLights())
                     {
                         glm::vec3 light_dir_delta = glm::normalize(ray.__direction__);
-                        radiance += beta * light->GetRadiance(last_surface_point, last_surface_point + mScene.GetRadius() * 2.f * ray.__direction__, -light_dir_delta);
+                        radiance += beta * light->GetRadiance(ray.__origin__, ray.__origin__ + mScene.GetRadius() * 2.f * ray.__direction__, -light_dir_delta);
                     }
                 }
 

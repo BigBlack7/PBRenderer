@@ -5,7 +5,7 @@ namespace pbrt
 {
     void AliasTable::Build(const std::vector<float> &values)
     {
-        float sum = 0;
+        double sum = 0;
         for (float v : values)
         {
             sum += v;
@@ -16,7 +16,7 @@ namespace pbrt
         for (size_t i = 0; i < values.size(); i++)
         {
             mProbs[i] = values[i] / sum;
-            mItems[i].__q__ = 1.f;
+            mItems[i].__q__ = 1.0;
             mItems[i].__p__ = mProbs[i] * values.size();
             if (mItems[i].__p__ < 1.f)
             {
@@ -38,7 +38,7 @@ namespace pbrt
 
             item_less.__q__ = item_less.__p__;
             item_less.__alias__ = greater_idx;
-            item_greater.__p__ -= (1.f - item_less.__q__);
+            item_greater.__p__ -= (1.0 - item_less.__q__);
             if (item_greater.__p__ < 1.f)
             {
                 less.push_back(greater_idx);
@@ -51,10 +51,10 @@ namespace pbrt
     }
     AliasTable::SampleResult AliasTable::Sample(float u) const
     {
-        int idx = glm::floor(glm::clamp<int>(u * mItems.size(), 0.f, mItems.size() - 1));
+        size_t idx = glm::floor(glm::clamp<size_t>(u * mItems.size(), 0, mItems.size() - 1));
         u = glm::clamp<float>(u * mItems.size() - idx, 0.f, 1.f);
         const auto &item = mItems[idx];
-        if (u <= item.__q__)
+        if ((item.__q__ == 1.0) || (u < item.__q__))
         {
             return SampleResult{idx, mProbs[idx]};
         }

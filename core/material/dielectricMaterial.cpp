@@ -50,21 +50,21 @@ namespace pbrt
             {
                 return BSDFInfo{mAlbedoR / glm::abs(light_dir.y), 1.f, light_dir};
             }
-            glm::vec3 brdf = mAlbedoR * mMicrofacet.D(microfacet_normal) * mMicrofacet.G2(light_dir, view_dir, microfacet_normal) / glm::abs(4.f * light_dir.y * view_dir.y);
-            float pdf = mMicrofacet.VisibleNormalDistribution(view_dir, microfacet_normal) / glm::abs(4.f * glm::dot(view_dir, microfacet_normal));
+            glm::vec3 brdf = F * mAlbedoR * mMicrofacet.D(microfacet_normal) * mMicrofacet.G2(light_dir, view_dir, microfacet_normal) / glm::abs(4.f * light_dir.y * view_dir.y);
+            float pdf = F * mMicrofacet.VisibleNormalDistribution(view_dir, microfacet_normal) / glm::abs(4.f * glm::dot(view_dir, microfacet_normal));
             return BSDFInfo{brdf, pdf, light_dir};
         }
-        else // 折射
+        else // 透射
         {
             glm::vec3 light_dir{(-view_dir / etai_div_etat) + (cos_theta_t / etai_div_etat - cos_theta_i) * microfacet_normal * inverse};
 
             float det_J = etai_div_etat * etai_div_etat * glm::abs(glm::dot(light_dir, microfacet_normal)) / glm::pow(glm::abs(glm::dot(view_dir, microfacet_normal)) - etai_div_etat * etai_div_etat * glm::abs(glm::dot(light_dir, microfacet_normal)), 2.f);
 
-            glm::vec3 btdf = mAlbedoT * det_J * mMicrofacet.D(microfacet_normal) * mMicrofacet.G2(light_dir, view_dir, microfacet_normal) * glm::abs(glm::dot(view_dir, microfacet_normal) / (light_dir.y * view_dir.y));
+            glm::vec3 btdf = (1.f - F) * mAlbedoT * det_J * mMicrofacet.D(microfacet_normal) * mMicrofacet.G2(light_dir, view_dir, microfacet_normal) * glm::abs(glm::dot(view_dir, microfacet_normal) / (light_dir.y * view_dir.y));
 
-            float pdf = mMicrofacet.VisibleNormalDistribution(view_dir, microfacet_normal) * det_J;
+            float pdf = (1.f - F) * mMicrofacet.VisibleNormalDistribution(view_dir, microfacet_normal) * det_J;
 
-            return BSDFInfo{btdf / (etai_div_etat * etai_div_etat), pdf, light_dir};
+            return BSDFInfo{btdf / (etai_div_etat * etai_div_etat), pdf, light_dir, (etai_div_etat * etai_div_etat)};
             // return BSDFSample{btdf, pdf, light_dir};
         }
     }
@@ -111,5 +111,47 @@ namespace pbrt
         }
         glm::vec3 brdf = F * mAlbedoR * mMicrofacet.D(microfacet_normal) * mMicrofacet.G2(light_dir, view_dir, microfacet_normal) / glm::abs(4.f * lv);
         return brdf;
+    }
+
+    float DielectricMaterial::PDF(const glm::vec3 &hit_point, const glm::vec3 &light_dir, const glm::vec3 &view_dir) const
+    {
+        if (IsDeltaDistribution())
+        {
+            return 0.f;
+        }
+        float lv = light_dir.y * view_dir.y;
+        if (lv == 0.f)
+        {
+            return 0.f;
+        }
+
+        float etai_div_etat = mIOR;
+        float cos_theta_t = view_dir.y;
+        float inverse = 1.f;
+        if (cos_theta_t < 0)
+        {
+            etai_div_etat = 1.f / mIOR;
+            inverse = -1.f;
+            cos_theta_t = -cos_theta_t;
+        }
+
+        float cos_theta_i;
+        float F = Fresnel(etai_div_etat, cos_theta_t, cos_theta_i);
+
+        if (lv < 0.f) // 透射
+        {
+            glm::vec3 microfacet_normal = (light_dir + view_dir / etai_div_etat) * inverse / (cos_theta_t / etai_div_etat - cos_theta_i);
+            float det_J = etai_div_etat * etai_div_etat * glm::abs(glm::dot(light_dir, microfacet_normal)) / glm::pow(glm::abs(glm::dot(view_dir, microfacet_normal)) - etai_div_etat * etai_div_etat * glm::abs(glm::dot(light_dir, microfacet_normal)), 2.f);
+
+            return (1.f - F) * mMicrofacet.VisibleNormalDistribution(view_dir, microfacet_normal) * det_J;
+        }
+
+        // 反射
+        glm::vec3 microfacet_normal = glm::normalize(light_dir + view_dir);
+        if (microfacet_normal.y <= 0.f)
+        {
+            microfacet_normal = -microfacet_normal;
+        }
+        return F * mMicrofacet.VisibleNormalDistribution(view_dir, microfacet_normal) / glm::abs(4.f * glm::dot(view_dir, microfacet_normal));
     }
 }

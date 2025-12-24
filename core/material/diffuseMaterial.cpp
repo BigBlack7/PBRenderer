@@ -25,4 +25,13 @@ namespace pbrt
 
         return mAlbedo * INV_PI;
     }
+
+    float DiffuseMaterial::PDF(const glm::vec3 &hit_point, const glm::vec3 &light_dir, const glm::vec3 &view_dir) const
+    {
+        if (light_dir.y * view_dir.y <= 0)
+        {
+            return 0.f;
+        }
+        return CosineSampleHemispherePDF(light_dir);
+    }
 }

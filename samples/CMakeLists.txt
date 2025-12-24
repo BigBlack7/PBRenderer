@@ -2,3 +2,4 @@
 add_subdirectory(AdvanceMaterial)
 add_subdirectory(PBRT)
 add_subdirectory(LightSample)
+add_subdirectory(MIS)

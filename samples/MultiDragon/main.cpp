@@ -25,7 +25,7 @@ int main()
     // models
     pbrt::Sphere sphere{{0.f, 0.f, 0.f}, 1.f};
     pbrt::Model model("../../../assets/models/dragon_871k.obj");
-    pbrt::Plane plane{{0.f, 0.f, 0.f}, {0.f, 1.f, 0.f},10.f};
+    pbrt::Plane plane{{0.f, 0.f, 0.f}, {0.f, 1.f, 0.f}, 10.f};
 
     pbrt::Scene scene;
     pbrt::RNG rng{1234};
@@ -53,7 +53,8 @@ int main()
         else
         {
             random_pos.y += 6.f;
-            pbrt::AreaLight *area_light = new pbrt::AreaLight{sphere, {0.95f * 5.f, 0.95f * 5.f, 5.f}, false};
+            auto light = new pbrt::Sphere{random_pos, 1.f};
+            pbrt::AreaLight *area_light = new pbrt::AreaLight{*light, {0.95f * 5.f, 0.95f * 5.f, 5.f}, false};
             scene.AddAreaLight(area_light, new pbrt::DiffuseMaterial{});
         }
     }
