@@ -13,4 +13,26 @@
   - all funcs name(XxXxx)
   - temporary var or func var(xx_xxx)
 
-- Content
+- Implemented
+
+  - BVH
+  - AreaLight & EnvLight
+  - Conductor & dielectric
+  - Microfacet Theory
+  - PTRenderer
+  - MIS
+  - SFML Window
+  - Easy Threadpool
+  - Logger
+
+- Todo
+
+  - BDPT
+  - VPT
+  - SSS
+  - Medium
+  - Tone Mapping
+  - Sobol Sampler
+  - Spectrum
+  - Scene Parser
+  - Imgui Controller

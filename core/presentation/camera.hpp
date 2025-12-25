@@ -1,7 +1,7 @@
 ﻿#pragma once
 
 #include "film.hpp"
-#include "ray.hpp"
+#include "light/ray.hpp"
 
 namespace pbrt
 {

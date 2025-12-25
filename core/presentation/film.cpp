@@ -1,7 +1,8 @@
 ﻿#include "film.hpp"
+#include "image.hpp"
 #include "thread/threadPool.hpp"
-#include "utils/logger.hpp"
 #include "utils/rgb.hpp"
+#include "utils/logger.hpp"
 #include <fstream>
 
 namespace pbrt
@@ -38,28 +39,23 @@ namespace pbrt
 
     void Film::Save(const std::filesystem::path &filename) const
     {
-        std::ofstream file(filename, std::ios::binary);
-
-        file << "P6\n"
-             << mWidth << " " << mHeight << "\n255\n";
-
-        std::vector<uint8_t> buffer(mWidth * mHeight * 3);
+        std::vector<glm::vec3> buffer(mWidth * mHeight);
         threadPool.ParallelFor(mWidth, mHeight, [&](size_t x, size_t y)
                                {
-            auto pixel = GetPixel(x, y);
-            if (pixel.__sampleCount__ == 0)
-            {
-                return;
-            }
-            
-            RGB rgb(pixel.__color__ / static_cast<float>(pixel.__sampleCount__));
-            auto idx = (y * mWidth + x) * 3;
-            buffer[idx + 0] = rgb.mRed;
-            buffer[idx + 1] = rgb.mGreen;
-            buffer[idx + 2] = rgb.mBlue; }, false);
+                                   auto pixel = GetPixel(x, y);
+                                   if (pixel.__sampleCount__ == 0)
+                                   {
+                                       return;
+                                   }
+                                   buffer[y * mWidth + x] = pixel.__color__ / static_cast<float>(pixel.__sampleCount__);
 
+                                   // end
+                               },
+                               false);
         threadPool.Wait();
-        file.write(reinterpret_cast<const char *>(buffer.data()), buffer.size());
+
+        Image image(std::move(buffer), mWidth, mHeight);
+        image.Save(filename);
 
         // 文件保存成功后获取绝对路径
         if (std::filesystem::exists(filename))

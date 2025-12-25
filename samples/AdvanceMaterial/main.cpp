@@ -1,4 +1,5 @@
 ﻿// core
+#include <light/envLight.hpp>
 #include <material/diffuseMaterial.hpp>
 #include <material/conductorMaterial.hpp>
 #include <material/groundMaterial.hpp>
@@ -6,7 +7,7 @@
 #include <presentation/film.hpp>
 #include <presentation/camera.hpp>
 #include <presentation/previewer.hpp>
-#include <renderer/PTRenderer.hpp>
+#include <renderer/MISRenderer.hpp>
 #include <shape/sphere.hpp>
 #include <shape/model.hpp>
 #include <shape/plane.hpp>
@@ -20,7 +21,7 @@ int main()
     pbrt::Logger::Init();
     PBRT_INFO("PBRT Init!");
 
-    pbrt::Film film(192 * 4, 108 * 4);
+    pbrt::Film film(1920, 1080);
     pbrt::Camera camera{film, {-10.f, 1.5f, 0.f}, {0.f, 0.f, 0.f}, 45.f};
 
     // models
@@ -40,21 +41,19 @@ int main()
         scene.AddShape(sphere, new pbrt::ConductorMaterial{glm::vec3(2.f - c * 2.f), glm::vec3(2.f + c * 3.f), (3.f - i) / 6.f, (3.f - i) / 18.f}, {0.f, 2.5f, i * 2.f}, {0.8f, 0.8f, 0.8f});
     }
 
-    scene.AddShape(model, new pbrt::DielectricMaterial{pbrt::RGB(128, 191, 131), 1.8f, 0.5f, 0.5f}, {-5.f, 0.4f, 1.5f}, {2.f, 2.f, 2.f});
-    scene.AddShape(model, new pbrt::ConductorMaterial{{0.1f, 1.2f, 1.8f}, {5.f, 2.5f, 2.f}, 0.f, 0.f}, {-5.f, 0.4f, -1.5f}, {2.f, 2.f, 2.f});
+    scene.AddShape(model, new pbrt::DielectricMaterial{pbrt::RGB(221, 180, 221), 1.6f, 0.2f, 0.2f}, {-5.f, 0.4f, 1.5f}, {2.f, 2.f, 2.f});
+    scene.AddShape(model, new pbrt::ConductorMaterial{{0.1f, 1.2f, 1.8f}, {5.f, 2.5f, 2.f}, 0.2f, 0.2f}, {-5.f, 0.4f, -1.5f}, {2.f, 2.f, 2.f});
 
-    scene.AddShape(plane, new pbrt::GroundMaterial{pbrt::RGB(120, 204, 157)}, {0.f, -0.5f, 0.f});
-
-    auto light = new pbrt::Plane{{0.f, 10.f, 0.f}, {0.f, -1.f, 0.f}, 20.f};
-    pbrt::AreaLight *area_light = new pbrt::AreaLight{*light, {0.95f * 5.f, 0.95f * 5.f, 5.f}, false};
-    scene.AddAreaLight(area_light, new pbrt::DiffuseMaterial{});
+    // light
+    pbrt::Image env_mnap("../../../assets/hdris/puresky04.exr");
+    scene.AddInfiniteLight(new pbrt::EnvLight{&env_mnap});
     scene.Build();
 
-    pbrt::PTRenderer pt{camera, scene};
-    pbrt::Previewer previewer(pt, 1);
+    pbrt::MISRenderer mis{camera, scene};
+    pbrt::Previewer previewer(mis, 1);
     if (previewer.Preview())
     {
-        pt.Render("../../../AdvanceMaterial.ppm", 64);
+        mis.Render("../../../AdvanceMaterial.exr", 64);
     }
 
     PBRT_INFO("PBRT Shutdown!");

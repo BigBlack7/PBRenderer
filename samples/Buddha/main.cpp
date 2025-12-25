@@ -1,4 +1,5 @@
 ﻿// core
+#include <light/envLight.hpp>
 #include <material/diffuseMaterial.hpp>
 #include <material/specularMaterial.hpp>
 #include <material/conductorMaterial.hpp>
@@ -37,15 +38,17 @@ int main()
     scene.AddShape(sphere, new pbrt::SpecularMaterial{{1.f, 1.f, 1.f}}, {0.f, 3.75f, 3.f});
     pbrt::Plane ground{{0.f, 0.f, 0.f}, {0.f, 1.f, 0.f}, 100.f};
     scene.AddShape(ground, new pbrt::GroundMaterial{pbrt::RGB(155, 191, 255)});
-    scene.AddInfiniteLight(new pbrt::InfiniteLight{pbrt::RGB(255, 235, 180)});
+
+    pbrt::Image env_mnap("../../../assets/hdris/puresky02.exr");
+    scene.AddInfiniteLight(new pbrt::EnvLight{&env_mnap});
 
     scene.Build();
 
     pbrt::MISRenderer mis{camera, scene};
-    pbrt::Previewer previewer(mis, 1);
+    pbrt::Previewer previewer(mis);
     if (previewer.Preview())
     {
-        mis.Render("../../../MIS1.ppm", 64);
+        mis.Render("../../../MIS.exr", 32);
     }
 
     PBRT_INFO("PBRT Shutdown!");

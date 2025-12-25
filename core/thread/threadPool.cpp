@@ -94,21 +94,12 @@ namespace pbrt
 
         for (size_t x = 0; x < width; x += chunk_width)
         {
+            size_t W = ((x + chunk_width) > width) ? (width - x) : chunk_width;
             for (size_t y = 0; y < height; y += chunk_height)
             {
                 mPendingTaskCount++;
-
-                // 处理最后一个块的边界情况
-                if (x + chunk_width > width)
-                {
-                    chunk_width = width - x;
-                }
-                if (y + chunk_height > height)
-                {
-                    chunk_height = height - y;
-                }
-
-                mTasks.push(new ParallelTask(x, y, chunk_width, chunk_height, lambda));
+                size_t H = ((y + chunk_height) > height) ? (height - y) : chunk_height;
+                mTasks.push(new ParallelTask(x, y, W, H, lambda));
             }
         }
     }

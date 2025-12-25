@@ -1,5 +1,5 @@
 ﻿#pragma once
-#include "presentation/ray.hpp"
+#include "light/ray.hpp"
 #include "accelerate/bounds.hpp"
 #include <optional>
 
