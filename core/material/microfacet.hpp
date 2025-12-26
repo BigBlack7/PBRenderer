@@ -7,8 +7,8 @@ namespace pbrt
     class Microfacet // Smith Model, 伸缩不变性
     {
     private:
-        float mAlphaX{};
-        float mAlphaZ{};
+        mutable float mAlphaX{};
+        mutable float mAlphaZ{};
 
     private:
         float SlopeDistribution(const glm::vec2 &slope) const; // 法线斜率分布, 拉伸前的形状分布
@@ -23,5 +23,10 @@ namespace pbrt
 
         float VisibleNormalDistribution(const glm::vec3 &view_dir, const glm::vec3 &microfacet_normal) const; // 法线分布可见性函数
         glm::vec3 SampleVisibleNormal(const glm::vec3 &view_dir, const RNG &rng) const;                       // 采样可见法线
+
+        float GetAlphaX() const { return mAlphaX; };
+        float GetAlphaZ() const { return mAlphaZ; };
+        void SetAlphaX(float alpha_x) const { mAlphaX = alpha_x; };
+        void SetAlphaZ(float alpha_z) const { mAlphaZ = alpha_z; };
     };
 }

@@ -6,7 +6,17 @@ namespace pbrt
 {
     float PowerHeuristic(float pdf_j, float pdf_k)
     {
-        return (pdf_j * pdf_j) / (pdf_j * pdf_j + pdf_k * pdf_k);
+        // return (pdf_j * pdf_j) / (pdf_j * pdf_j + pdf_k * pdf_k);
+        if (pdf_j <= 0.f && pdf_k <= 0.f)
+            return 0.f;
+        if (pdf_j <= 0.f)
+            return 0.f;
+        if (pdf_k <= 0.f)
+            return 1.f;
+
+        float pdf_j_sq = pdf_j * pdf_j;
+        float pdf_k_sq = pdf_k * pdf_k;
+        return pdf_j_sq / (pdf_j_sq + pdf_k_sq + 1e-8f); // 添加小常数防止除零
     }
 
     glm::vec3 MISRenderer::RenderPixel(const glm::ivec3 &pixel_coord)
@@ -21,6 +31,10 @@ namespace pbrt
         float eta_scale = 1.f;
         bool MISC = true;
         const LightSampler &light_sampler = mScene.GetLightSampler(MISC);
+
+        // Path Regularization
+        bool is_regularized = false;
+        bool anyNonSpecularBounces = false;
 
         while (true)
         {
@@ -67,6 +81,7 @@ namespace pbrt
                     last_is_delta = hit_info->__material__->IsDeltaDistribution();
                     if (!last_is_delta)
                     {
+                        anyNonSpecularBounces = true;
                         auto light_sample_info = light_sampler.SampleLight(rng.Uniform());
                         if (light_sample_info.has_value())
                         {
@@ -74,6 +89,12 @@ namespace pbrt
                             if (light_info.has_value() && (!mScene.Intersect({hit_info->__hitPoint__, light_info->__lightPoint__ - hit_info->__hitPoint__}, 1e-5, 1.f - 1e-5)))
                             {
                                 glm::vec3 light_dir_local = frame.LocalFromWorld(light_info->__direction__);
+
+                                if (is_regularized && anyNonSpecularBounces)
+                                {
+                                    hit_info->__material__->Regularize();
+                                }
+
                                 float bsdf_pdf = hit_info->__material__->PDF(hit_info->__hitPoint__, light_dir_local, view_dir);
                                 float light_weight = PowerHeuristic(light_info->__pdf__ * light_sample_info->__prob__, bsdf_pdf);
                                 radiance += light_weight * beta * hit_info->__material__->BSDF(hit_info->__hitPoint__, light_dir_local, view_dir) * glm::abs(light_dir_local.y) * light_info->__Le__ / (light_info->__pdf__ * light_sample_info->__prob__);
@@ -81,6 +102,10 @@ namespace pbrt
                         }
                     }
 
+                    if (is_regularized && anyNonSpecularBounces)
+                    {
+                        hit_info->__material__->Regularize();
+                    }
                     auto bsdf_info = hit_info->__material__->SampleBSDF(hit_info->__hitPoint__, view_dir, rng);
 
                     if (!bsdf_info.has_value())

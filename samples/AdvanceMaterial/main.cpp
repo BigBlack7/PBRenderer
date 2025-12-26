@@ -10,7 +10,7 @@
 #include <renderer/MISRenderer.hpp>
 #include <shape/sphere.hpp>
 #include <shape/model.hpp>
-#include <shape/plane.hpp>
+#include <shape/circle.hpp>
 #include <shape/scene.hpp>
 #include <utils/logger.hpp>
 #include <utils/rgb.hpp>
@@ -27,7 +27,6 @@ int main()
     // models
     pbrt::Sphere sphere{{0.f, 0.f, 0.f}, 1.f};
     pbrt::Model model("../../../assets/models/dragon_871k.obj");
-    pbrt::Plane plane{{0.f, 0.f, 0.f}, {0.f, 1.f, 0.f}, 10.f};
 
     pbrt::Scene scene;
     pbrt::RNG rng{1234};
@@ -53,7 +52,7 @@ int main()
     pbrt::Previewer previewer(mis, 1);
     if (previewer.Preview())
     {
-        mis.Render("../../../AdvanceMaterial.exr", 64);
+        mis.Render("../../../AdvanceMaterial.exr", 128);
     }
 
     PBRT_INFO("PBRT Shutdown!");

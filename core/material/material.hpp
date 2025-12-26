@@ -24,5 +24,6 @@ namespace pbrt
         virtual glm::vec3 BSDF(const glm::vec3 &hit_point, const glm::vec3 &light_dir, const glm::vec3 &view_dir) const = 0;
         virtual float PDF(const glm::vec3 &hit_point, const glm::vec3 &light_dir, const glm::vec3 &view_dir) const = 0;
         virtual bool IsDeltaDistribution() const = 0;
+        virtual void Regularize() const {};
     };
 }

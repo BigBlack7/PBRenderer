@@ -12,7 +12,7 @@
 #include <renderer/PTRenderer.hpp>
 #include <shape/sphere.hpp>
 #include <shape/model.hpp>
-#include <shape/plane.hpp>
+#include <shape/circle.hpp>
 #include <shape/scene.hpp>
 #include <utils/logger.hpp>
 #include <utils/rgb.hpp>
@@ -36,7 +36,7 @@ int main()
 
     pbrt::Sphere sphere{{0.f, 0.f, 0.f}, 1.f};
     scene.AddShape(sphere, new pbrt::SpecularMaterial{{1.f, 1.f, 1.f}}, {0.f, 3.75f, 3.f});
-    pbrt::Plane ground{{0.f, 0.f, 0.f}, {0.f, 1.f, 0.f}, 100.f};
+    pbrt::Circle ground{{0.f, 0.f, 0.f}, {0.f, 1.f, 0.f}, 100.f};
     scene.AddShape(ground, new pbrt::GroundMaterial{pbrt::RGB(155, 191, 255)});
 
     pbrt::Image env_mnap("../../../assets/hdris/puresky02.exr");

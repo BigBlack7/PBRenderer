@@ -10,7 +10,7 @@
 #include <renderer/PTRenderer.hpp>
 #include <shape/sphere.hpp>
 #include <shape/model.hpp>
-#include <shape/plane.hpp>
+#include <shape/circle.hpp>
 #include <shape/scene.hpp>
 #include <utils/logger.hpp>
 #include <utils/rgb.hpp>
@@ -56,8 +56,8 @@ int main()
         scene.AddShape(triangles[0], surface_material, center, {1.f, 1.f, 1.f}, {rotate_x, 0.f, 0.f});
         scene.AddShape(triangles[1], surface_material, center, {1.f, 1.f, 1.f}, {rotate_x, 0.f, 0.f});
     }
-    pbrt::Plane ground{{0.f, -0.5f, 0.f}, {0.f, 1.f, 0.f}, 100.f};
-    pbrt::Plane wall{{0.f, 0.f, 15.f}, {0.f, 0.f, -1.f}, 100.f};
+    pbrt::Circle ground{{0.f, -0.5f, 0.f}, {0.f, 1.f, 0.f}, 100.f};
+    pbrt::Circle wall{{0.f, 0.f, 15.f}, {0.f, 0.f, -1.f}, 100.f};
     scene.AddShape(ground, new pbrt::GroundMaterial{{1.f, 1.f, 1.f}});
     scene.AddShape(wall, new pbrt::DiffuseMaterial{{1.f, 1.f, 1.f}});
     scene.AddInfiniteLight(new pbrt::InfiniteLight{{0.5f, 0.5f, 0.5f}});

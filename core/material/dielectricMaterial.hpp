@@ -22,5 +22,6 @@ namespace pbrt
         glm::vec3 BSDF(const glm::vec3 &hit_point, const glm::vec3 &light_dir, const glm::vec3 &view_dir) const override;
         float PDF(const glm::vec3 &hit_point, const glm::vec3 &light_dir, const glm::vec3 &view_dir) const override;
         bool IsDeltaDistribution() const override { return mMicrofacet.IsDeltaDistribution() || (mIOR == 1.f); }
+        void Regularize() const override;
     };
 }

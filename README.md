@@ -1,38 +1,43 @@
-﻿- PBRenderer
+﻿# PBRenderer
 
-  - refer to PBRT-v4
-  - build it by msvc
+- refer to PBRT-v4
+- build it by msvc
 
-- NameFormat
+# Gallery(1024 spp)
+![CornellboxSeries](gallery/cornellbox01.png)
+![CornellboxSeries](gallery/cornellbox02.png)
+![CornellboxSeries](gallery/cornellbox03.png)
 
-  - file name(xxXxx)
-  - class name(XxXxx)
-  - class member var name(mXxx)
-  - struct name(XxXxx)
-  - struct member var name(--xxXxx--)
-  - all funcs name(XxXxx)
-  - temporary var or func var(xx_xxx)
+# NameFormat
 
-- Implemented
+- file name(xxXxx)
+- class name(XxXxx)
+- class member var name(mXxx)
+- struct name(XxXxx)
+- struct member var name(--xxXxx--)
+- all funcs name(XxXxx)
+- temporary var or func var(xx_xxx)
 
-  - BVH
-  - AreaLight & EnvLight
-  - Conductor & dielectric
-  - Microfacet Theory
-  - PTRenderer
-  - MIS
-  - SFML Window
-  - Easy Threadpool
-  - Logger
+# Implemented
 
-- Todo
+- BVH
+- AreaLight & EnvLight
+- Conductor & dielectric
+- Microfacet Theory
+- PTRenderer
+- MIS
+- SFML Window
+- Easy Threadpool
+- Logger
 
-  - BDPT
-  - VPT
-  - SSS
-  - Medium
-  - Tone Mapping
-  - Sobol Sampler
-  - Spectrum
-  - Scene Parser
-  - Imgui Controller
+# Todo
+
+- BDPT
+- VPT
+- SSS
+- Medium
+- Tone Mapping
+- Sobol Sampler
+- Spectrum
+- Scene Parser
+- Imgui Controller

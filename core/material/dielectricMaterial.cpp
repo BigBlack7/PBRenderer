@@ -154,4 +154,18 @@ namespace pbrt
         }
         return F * mMicrofacet.VisibleNormalDistribution(view_dir, microfacet_normal) / glm::abs(4.f * glm::dot(view_dir, microfacet_normal));
     }
+
+    void DielectricMaterial::Regularize() const
+    {
+        float alpha_x = mMicrofacet.GetAlphaX();
+        float alpha_z = mMicrofacet.GetAlphaZ();
+
+        if (alpha_x < 0.3f)
+            alpha_x = glm::clamp(2 * alpha_x, 0.1f, 0.3f);
+        mMicrofacet.SetAlphaX(alpha_x);
+
+        if (alpha_z < 0.3f)
+            alpha_z = glm::clamp(2 * alpha_z, 0.1f, 0.3f);
+        mMicrofacet.SetAlphaZ(alpha_z);
+    }
 }
