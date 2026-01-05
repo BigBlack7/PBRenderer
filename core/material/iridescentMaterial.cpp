@@ -6,6 +6,16 @@ namespace pbrt
 {
     using pbrt::PI; // Use the PI constant from spherical.hpp
     
+    // Constants for thin-film interference calculations
+    static constexpr float XYZ_NORMALIZATION_CONSTANT = 1.0685e-7f; // Derived from XYZ color matching function integration
+    static constexpr float DINC_SMOOTHSTEP_THRESHOLD = 0.03f;      // Threshold for smooth transition when film thickness approaches zero
+    static constexpr int MAX_INTERFERENCE_HARMONICS = 3;           // Number of interference harmonics to compute for accuracy
+    
+    // Constants for microfacet regularization (from parent Microfacet class conventions)
+    static constexpr float REGULARIZE_THRESHOLD = 0.3f;
+    static constexpr float REGULARIZE_MIN = 0.1f;
+    static constexpr float REGULARIZE_SCALE = 2.0f;
+    
     // XYZ to CIE 1931 RGB color space (using neutral E illuminant)
     static const glm::mat3 XYZ_TO_RGB = glm::mat3(
         2.3706743f, -0.9000405f, -0.4706338f,
@@ -102,13 +112,13 @@ namespace pbrt
                  std::exp(-4.5282e+09f * phase * phase);
         
         // Normalization constant to convert to standard XYZ tristimulus values
-        return xyz / 1.0685e-7f;
+        return xyz / XYZ_NORMALIZATION_CONSTANT;
     }
 
     float IridescentMaterial::GetEffectiveEta2() const
     {
         // Force eta_2 -> 1.0 when Dinc -> 0.0 to avoid artifacts
-        return glm::mix(1.0f, mEta2, glm::smoothstep(0.0f, 0.03f, mDinc));
+        return glm::mix(1.0f, mEta2, glm::smoothstep(0.0f, DINC_SMOOTHSTEP_THRESHOLD, mDinc));
     }
 
     glm::vec3 IridescentMaterial::ComputeIridescence(float cos_theta1, float cos_theta2) const
@@ -143,7 +153,7 @@ namespace pbrt
 
         // Reflectance term for m>0 (pairs of diracs)
         glm::vec2 Cm = Rs - T121;
-        for (int m = 1; m <= 3; ++m)
+        for (int m = 1; m <= MAX_INTERFERENCE_HARMONICS; ++m)
         {
             Cm *= r123;
             glm::vec3 SmS = 2.0f * EvalSensitivity(m * OPD, m * phi2.x);
@@ -253,12 +263,13 @@ namespace pbrt
         float alpha_x = mMicrofacet.GetAlphaX();
         float alpha_z = mMicrofacet.GetAlphaZ();
 
-        if (alpha_x < 0.3f)
-            alpha_x = glm::clamp(2.0f * alpha_x, 0.1f, 0.3f);
+        // Regularize roughness to avoid numerical issues with very smooth surfaces
+        if (alpha_x < REGULARIZE_THRESHOLD)
+            alpha_x = glm::clamp(REGULARIZE_SCALE * alpha_x, REGULARIZE_MIN, REGULARIZE_THRESHOLD);
         mMicrofacet.SetAlphaX(alpha_x);
 
-        if (alpha_z < 0.3f)
-            alpha_z = glm::clamp(2.0f * alpha_z, 0.1f, 0.3f);
+        if (alpha_z < REGULARIZE_THRESHOLD)
+            alpha_z = glm::clamp(REGULARIZE_SCALE * alpha_z, REGULARIZE_MIN, REGULARIZE_THRESHOLD);
         mMicrofacet.SetAlphaZ(alpha_z);
     }
 }
