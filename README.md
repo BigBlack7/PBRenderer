@@ -24,8 +24,10 @@
 - AreaLight & EnvLight
 - Conductor & dielectric
 - Microfacet Theory
+- Iridescent material with thin-film interference
 - PTRenderer
 - MIS
+- Sobol Sampler (Low-Discrepancy Sequence with Owen Scrambling)
 - SFML Window
 - Easy Threadpool
 - Logger
@@ -37,7 +39,6 @@
 - SSS
 - Medium
 - Tone Mapping
-- Sobol Sampler
 - Spectrum
 - Scene Parser
 - Imgui Controller
