@@ -11,6 +11,7 @@ namespace pbrt
         float mEta2;        // IOR of thin film layer
         float mEta3;        // IOR of base material
         float mKappa3;      // Extinction coefficient of base material
+        glm::vec3 mBaseColor; // Base diffuse color (for dielectric substrates when kappa3 = 0)
         Microfacet mMicrofacet;
 
     private:
@@ -30,8 +31,10 @@ namespace pbrt
         float GetEffectiveEta2() const;
 
     public:
-        IridescentMaterial(float Dinc, float eta2, float eta3, float kappa3, float alpha_x, float alpha_z)
-            : mDinc(Dinc), mEta2(eta2), mEta3(eta3), mKappa3(kappa3), mMicrofacet(alpha_x, alpha_z) {}
+        // Constructor with base color (for dielectric substrates)
+        IridescentMaterial(float Dinc, float eta2, float eta3, float kappa3, float alpha_x, float alpha_z, 
+                          const glm::vec3& base_color = glm::vec3(1.0f))
+            : mDinc(Dinc), mEta2(eta2), mEta3(eta3), mKappa3(kappa3), mBaseColor(base_color), mMicrofacet(alpha_x, alpha_z) {}
         
         std::optional<BSDFInfo> SampleBSDF(const glm::vec3 &hit_point, const glm::vec3 &view_dir, const RNG &rng) const override;
         glm::vec3 BSDF(const glm::vec3 &hit_point, const glm::vec3 &light_dir, const glm::vec3 &view_dir) const override;

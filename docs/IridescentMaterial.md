@@ -44,6 +44,11 @@ The `IridescentMaterial` class takes the following parameters:
   - 0.1-0.3: Glossy surface
   - > 0.5: Rough, matte surface
 
+- **base_color** (optional): RGB base diffuse color for dielectric substrates (default: white)
+  - Only affects dielectric substrates (kappa3 ≈ 0)
+  - Modulates the iridescent reflection with a colored base
+  - Useful for colored materials like beetle shells, feathers, or paint
+
 ## Usage Example
 
 ```cpp
@@ -67,6 +72,17 @@ auto iridescentMetal = new pbrt::IridescentMaterial{
     2.0f,    // kappa3: conductor
     0.1f,    // alpha_x: slightly rough
     0.1f     // alpha_z: slightly rough
+};
+
+// Create a colored dielectric substrate (e.g., green beetle shell)
+auto greenBeetle = new pbrt::IridescentMaterial{
+    0.4f,                      // Dinc: 400nm film thickness
+    1.5f,                      // eta2: chitin layer
+    1.5f,                      // eta3: dielectric base
+    0.0f,                      // kappa3: dielectric
+    0.05f,                     // alpha_x: glossy
+    0.05f,                     // alpha_z: glossy
+    glm::vec3(0.1f, 0.6f, 0.2f) // base_color: green substrate
 };
 
 // Add to scene

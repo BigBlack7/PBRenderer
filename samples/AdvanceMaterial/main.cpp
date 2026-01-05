@@ -43,9 +43,15 @@ int main()
     // Add iridescent material spheres with varying parameters
     for (int i = -3; i <= 3; i++)
     {
-        // Parameters: Dinc (film thickness), eta2 (film IOR), eta3 (base IOR), kappa3 (extinction), alpha_x, alpha_z
+        // Parameters: Dinc (film thickness), eta2 (film IOR), eta3 (base IOR), kappa3 (extinction), alpha_x, alpha_z, base_color
         float dinc = 0.1f + (i + 3) * 0.05f;  // Film thickness from 0.1 to 0.4 micrometers
-        scene.AddShape(sphere, new pbrt::IridescentMaterial{dinc, 2.0f, 3.0f, 0.0f, 0.01f, 0.01f}, {0.f, 4.5f, i * 2.f}, {0.8f, 0.8f, 0.8f});
+        
+        // Create colored dielectric substrates to demonstrate the base color feature
+        // Colors from blue to red to show different substrate effects
+        float t = (i + 3) / 6.0f;
+        glm::vec3 base_color = glm::vec3(0.2f + 0.8f * t, 0.5f * (1.0f - t), 0.8f * (1.0f - t));
+        
+        scene.AddShape(sphere, new pbrt::IridescentMaterial{dinc, 2.0f, 1.5f, 0.0f, 0.01f, 0.01f, base_color}, {0.f, 4.5f, i * 2.f}, {0.8f, 0.8f, 0.8f});
     }
 
     scene.AddShape(model, new pbrt::DielectricMaterial{pbrt::RGB(221, 180, 221), 1.6f, 0.2f, 0.2f}, {-5.f, 0.4f, 1.5f}, {2.f, 2.f, 2.f});

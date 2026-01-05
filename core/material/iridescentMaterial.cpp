@@ -163,7 +163,16 @@ namespace pbrt
 
         // Convert back to RGB reflectance
         I = XYZ_TO_RGB * I;
-        return glm::clamp(I, glm::vec3(0.0f), glm::vec3(1.0f));
+        I = glm::clamp(I, glm::vec3(0.0f), glm::vec3(1.0f));
+        
+        // For dielectric substrates (kappa3 ≈ 0), modulate with base color
+        // This allows colored substrates as described in Belcour & Barla 2017
+        if (mKappa3 < 0.01f) // Threshold to detect dielectric
+        {
+            I *= mBaseColor;
+        }
+        
+        return I;
     }
 
     std::optional<BSDFInfo> IridescentMaterial::SampleBSDF(const glm::vec3 &hit_point, const glm::vec3 &view_dir, const RNG &rng) const
