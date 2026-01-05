@@ -4,6 +4,7 @@
 #include <material/conductorMaterial.hpp>
 #include <material/groundMaterial.hpp>
 #include <material/dielectricMaterial.hpp>
+#include <material/iridescentMaterial.hpp>
 #include <presentation/film.hpp>
 #include <presentation/camera.hpp>
 #include <presentation/previewer.hpp>
@@ -22,7 +23,7 @@ int main()
     PBRT_INFO("PBRT Init!");
 
     pbrt::Film film(1920, 1080);
-    pbrt::Camera camera{film, {-10.f, 1.5f, 0.f}, {0.f, 0.f, 0.f}, 45.f};
+    pbrt::Camera camera{film, {-15.f, 3.5f, 0.f}, {0.f, 0.f, 0.f}, 45.f};
 
     // models
     pbrt::Sphere sphere{{0.f, 0.f, 0.f}, 1.f};
@@ -38,6 +39,11 @@ int main()
     {
         glm::vec3 c = pbrt::RGB::GenerateHeatMap((i + 3.f) / 6.f);
         scene.AddShape(sphere, new pbrt::ConductorMaterial{glm::vec3(2.f - c * 2.f), glm::vec3(2.f + c * 3.f), (3.f - i) / 6.f, (3.f - i) / 18.f}, {0.f, 2.5f, i * 2.f}, {0.8f, 0.8f, 0.8f});
+    }
+    for (int i = -3; i <= 3; i++)
+    {
+        float dinc = 0.1f + (i + 3) * 0.05f;
+        scene.AddShape(sphere, new pbrt::IridescentMaterial{dinc, 2.f, 3.f, 0.f, 0.01f, 0.01f}, {0.f, 4.5f, i * 2.f}, {0.8f, 0.8f, 0.8f});
     }
 
     scene.AddShape(model, new pbrt::DielectricMaterial{pbrt::RGB(221, 180, 221), 1.6f, 0.2f, 0.2f}, {-5.f, 0.4f, 1.5f}, {2.f, 2.f, 2.f});

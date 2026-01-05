@@ -1,15 +1,16 @@
 ﻿#pragma once
 #include <cmath>
+
 namespace pbrt
 {
     struct Complex
     {
-        union
+        union // 实部
         {
             float __a__;
             float __c__;
         };
-        union
+        union // 虚部
         {
             float __b__;
             float __d__;

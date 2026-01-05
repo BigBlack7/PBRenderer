@@ -1,5 +1,4 @@
 ﻿#pragma once
-
 #include "utils/rng.hpp"
 #include <glm/glm.hpp>
 #include <optional>

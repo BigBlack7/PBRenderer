@@ -1,5 +1,4 @@
 ﻿#pragma once
-
 #include "renderer.hpp"
 
 namespace pbrt

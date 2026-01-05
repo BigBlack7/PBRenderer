@@ -1,5 +1,4 @@
 ﻿#pragma once
-
 #include "film.hpp"
 #include "light/ray.hpp"
 

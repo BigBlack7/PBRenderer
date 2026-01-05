@@ -4,6 +4,7 @@
 #include <iostream>
 #include <sstream>
 #include <rapidobj/rapidobj.hpp>
+
 namespace pbrt
 {
     Model::Model(const std::filesystem::path &filename, bool byMyself)

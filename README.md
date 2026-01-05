@@ -1,7 +1,7 @@
 ﻿# PBRenderer
 
-- refer to PBRT-v4
-- build it by msvc
+- Refer to PBRT-v4
+- Build it by msvc
 
 # Gallery(1024 spp)
 ![CornellboxSeries](gallery/cornellbox01.png)
@@ -22,7 +22,7 @@
 
 - BVH
 - AreaLight & EnvLight
-- Conductor & dielectric
+- Conductor & Dielectric
 - Microfacet Theory
 - PTRenderer
 - MIS

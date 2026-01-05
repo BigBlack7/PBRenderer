@@ -10,6 +10,9 @@ set(BUILD_SHARED_LIBS OFF)
 if(MSVC)
     cmake_policy(SET CMP0077 NEW)
     add_compile_options(/MP)
+
+    set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /O2")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /O2")
 endif()
 
 # output directories

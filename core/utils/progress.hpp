@@ -1,5 +1,4 @@
 ﻿#pragma once
-
 #include "thread/threadPool.hpp"
 
 namespace pbrt

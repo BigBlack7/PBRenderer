@@ -1,5 +1,4 @@
 ﻿#pragma once
-
 #include <vector>
 #include <filesystem>
 #include <glm/glm.hpp>

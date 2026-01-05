@@ -1,19 +1,25 @@
 ﻿#pragma once
 #include <glm/glm.hpp>
 #include <array>
+
 namespace pbrt
 {
     class RGB Lerp(const RGB &a, const RGB &b, float t);
 
+    /*
+        物理世界(线性)  →  人眼感知(非线性)  →  显示器输出
+        [0.0, 1.0]         γ=2.2幂函数          [0.0, 1.0]
+        线性渐变           编码压缩             sRGB显示空间
+    */
     class RGB
     {
     public:
-        int mRed, mGreen, mBlue;
+        int mRed, mGreen, mBlue; // 8位颜色分量 [0, 255]
 
     public:
         RGB(int red, int green, int blue) : mRed(red), mGreen(green), mBlue(blue) {}
 
-        RGB(const glm::vec3 &color)
+        RGB(const glm::vec3 &color) // 转换到sRGB空间
         {
             float inv_gamma = 1.f / 2.2f;
             mRed = glm::clamp<int>(glm::pow(color.r, inv_gamma) * 255.f, 0, 255);
@@ -21,13 +27,15 @@ namespace pbrt
             mBlue = glm::clamp<int>(glm::pow(color.b, inv_gamma) * 255.f, 0, 255);
         }
 
-        operator glm::vec3() const
+        operator glm::vec3() const // 转换到线性空间
         {
             float inv_channel = 1.f / 255.f;
             return glm::vec3{
                 glm::pow(mRed * inv_channel, 2.2f),
                 glm::pow(mGreen * inv_channel, 2.2f),
-                glm::pow(mBlue * inv_channel, 2.2f)};
+                glm::pow(mBlue * inv_channel, 2.2f)
+                // end
+            };
         }
 
         // 热力图, 用来dedug, 观察bvh的构建情况
@@ -62,7 +70,9 @@ namespace pbrt
                 RGB{170, 220, 50},
                 RGB{199, 224, 32},
                 RGB{227, 228, 24},
-                RGB{253, 231, 37}};
+                RGB{253, 231, 37}
+                // end
+            };
 
             if (t < 0.f || t > 1.f)
             {
@@ -80,6 +90,8 @@ namespace pbrt
         return RGB{
             glm::clamp<int>(v0.mRed + (v1.mRed - v0.mRed) * t, 0, 255),
             glm::clamp<int>(v0.mGreen + (v1.mGreen - v0.mGreen) * t, 0, 255),
-            glm::clamp<int>(v0.mBlue + (v1.mBlue - v0.mBlue) * t, 0, 255)};
+            glm::clamp<int>(v0.mBlue + (v1.mBlue - v0.mBlue) * t, 0, 255)
+            // end
+        };
     }
 }

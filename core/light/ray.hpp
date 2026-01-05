@@ -1,5 +1,4 @@
 ﻿#pragma once
-
 #include "material/material.hpp"
 #include "utils/debugMacro.hpp"
 #include <glm/glm.hpp>

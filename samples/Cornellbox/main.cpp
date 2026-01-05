@@ -44,15 +44,15 @@ int main()
     scene.AddShape(white_bottom, new pbrt::DiffuseMaterial{pbrt::RGB(255, 255, 255)}, {0.f, 0.f, 0.f}, {1.f, 1.f, 1.f}, {0.f, -90.f, 0.f});
 
     // original box
-    // scene.AddShape(box, new pbrt::DiffuseMaterial{pbrt::RGB(255, 255, 255)}, {0.6f, 1.92f, 0.52f}, {0.018f, 0.07f, 0.04f}); // big one
-    // scene.AddShape(box, new pbrt::DiffuseMaterial{pbrt::RGB(255, 255, 255)}, {-0.3f, 0.87f, 0.08f}, {0.032f, 0.032f, 0.032f}, {0.f, -54.f, 0.f}); // small one
+    scene.AddShape(box, new pbrt::DiffuseMaterial{pbrt::RGB(255, 255, 255)}, {0.6f, 1.92f, 0.52f}, {0.018f, 0.07f, 0.04f}); // big one
+    scene.AddShape(box, new pbrt::DiffuseMaterial{pbrt::RGB(255, 255, 255)}, {-0.3f, 0.87f, 0.08f}, {0.032f, 0.032f, 0.032f}, {0.f, -54.f, 0.f}); // small one
 
     // glass sphere and metal box
     // scene.AddShape(box, new pbrt::ConductorMaterial{{0.1f, 1.2f, 1.8f}, {5.f, 2.5f, 2.f}, 0.5f, 0.3f}, {0.6f, 1.92f, 0.52f}, {0.018f, 0.07f, 0.04f});
     // scene.AddShape(sphere, new pbrt::DielectricMaterial{pbrt::RGB(255, 255, 255), 1.4f, 0.2f, 0.2f}, {-0.3f, 0.35f, -0.3f});
 
     // bunny
-    scene.AddShape(bunny, new pbrt::DielectricMaterial{pbrt::RGB(221, 180, 221), 1.61f, 0.2f, 0.2f}, {0.f, 0.2f, 0.f}, {0.7f, 0.7f, 0.7f}, {0.f, -70.f, 0.f});
+    // scene.AddShape(bunny, new pbrt::DielectricMaterial{pbrt::RGB(221, 180, 221), 1.61f, 0.2f, 0.2f}, {0.f, 0.2f, 0.f}, {0.7f, 0.7f, 0.7f}, {0.f, -70.f, 0.f});
 
     // light
     pbrt::Image env_mnap("../../../assets/hdris/puresky03.exr");
