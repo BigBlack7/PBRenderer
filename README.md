@@ -24,6 +24,7 @@
 - AreaLight & EnvLight
 - Conductor & dielectric
 - Microfacet Theory
+- Iridescent material with thin-film interference
 - PTRenderer
 - MIS
 - SFML Window

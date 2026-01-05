@@ -25,6 +25,9 @@ namespace pbrt
         
         // Compute the iridescent color based on thin-film interference
         glm::vec3 ComputeIridescence(float cos_theta1, float cos_theta2) const;
+        
+        // Get effective eta2 with smooth interpolation to 1.0 when Dinc -> 0
+        float GetEffectiveEta2() const;
 
     public:
         IridescentMaterial(float Dinc, float eta2, float eta3, float kappa3, float alpha_x, float alpha_z)

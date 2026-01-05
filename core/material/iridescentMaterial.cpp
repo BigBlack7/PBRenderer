@@ -83,9 +83,11 @@ namespace pbrt
 
     glm::vec3 IridescentMaterial::EvalSensitivity(float opd, float shift) const
     {
-        // Use Gaussian fits for XYZ sensitivity curves in Fourier space
+        // CIE 1931 XYZ color matching function Gaussian approximation coefficients
+        // These parameters approximate the spectral response of human color vision
         float phase = 2.0f * PI * opd * 1.0e-6f;
         
+        // Gaussian fit parameters: amplitude, center frequency, variance
         glm::vec3 val(5.4856e-13f, 4.4201e-13f, 5.2481e-13f);
         glm::vec3 pos(1.6810e+06f, 1.7953e+06f, 2.2084e+06f);
         glm::vec3 var(4.3278e+09f, 9.3046e+09f, 6.6121e+09f);
@@ -94,18 +96,24 @@ namespace pbrt
         xyz *= glm::cos(pos * phase + shift);
         xyz *= glm::exp(-var * phase * phase);
         
-        // Additional component for X
+        // Additional component for X sensitivity curve
         xyz.x += 9.7470e-14f * std::sqrt(2.0f * PI * 4.5282e+09f) * 
                  std::cos(2.2399e+06f * phase + shift) * 
                  std::exp(-4.5282e+09f * phase * phase);
         
+        // Normalization constant to convert to standard XYZ tristimulus values
         return xyz / 1.0685e-7f;
+    }
+
+    float IridescentMaterial::GetEffectiveEta2() const
+    {
+        // Force eta_2 -> 1.0 when Dinc -> 0.0 to avoid artifacts
+        return glm::mix(1.0f, mEta2, glm::smoothstep(0.0f, 0.03f, mDinc));
     }
 
     glm::vec3 IridescentMaterial::ComputeIridescence(float cos_theta1, float cos_theta2) const
     {
-        // Force eta_2 -> 1.0 when Dinc -> 0.0
-        float eta_2 = glm::mix(1.0f, mEta2, glm::smoothstep(0.0f, 0.03f, mDinc));
+        float eta_2 = GetEffectiveEta2();
 
         // First interface (air to thin film)
         glm::vec2 R12, phi12;
@@ -161,7 +169,7 @@ namespace pbrt
         
         // Compute angles for thin-film interference
         float cos_theta1 = glm::abs(glm::dot(view_dir, microfacet_normal));
-        float eta_2 = glm::mix(1.0f, mEta2, glm::smoothstep(0.0f, 0.03f, mDinc));
+        float eta_2 = GetEffectiveEta2();
         float sin2_theta1 = 1.0f - cos_theta1 * cos_theta1;
         float cos_theta2 = std::sqrt(glm::max(0.0f, 1.0f - (1.0f / (eta_2 * eta_2)) * sin2_theta1));
 
@@ -203,7 +211,7 @@ namespace pbrt
 
         // Compute angles for thin-film interference
         float cos_theta1 = glm::abs(glm::dot(view_dir, microfacet_normal));
-        float eta_2 = glm::mix(1.0f, mEta2, glm::smoothstep(0.0f, 0.03f, mDinc));
+        float eta_2 = GetEffectiveEta2();
         float sin2_theta1 = 1.0f - cos_theta1 * cos_theta1;
         float cos_theta2 = std::sqrt(glm::max(0.0f, 1.0f - (1.0f / (eta_2 * eta_2)) * sin2_theta1));
 
