@@ -39,8 +39,8 @@ int main()
     pbrt::Circle ground{{0.f, 0.f, 0.f}, {0.f, 1.f, 0.f}, 100.f};
     scene.AddShape(ground, new pbrt::GroundMaterial{pbrt::RGB(155, 191, 255)});
 
-    pbrt::Image env_mnap("../../../assets/hdris/puresky02.exr");
-    scene.AddInfiniteLight(new pbrt::EnvLight{&env_mnap});
+    pbrt::Image env_map("../../../assets/hdris/puresky02.exr");
+    scene.AddInfiniteLight(new pbrt::EnvLight{&env_map});
 
     scene.Build();
 

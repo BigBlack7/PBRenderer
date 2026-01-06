@@ -1,6 +1,7 @@
 ﻿#include "MISRenderer.hpp"
 #include "utils/frame.hpp"
 #include "utils/rng.hpp"
+#include "sequence/sobolSampler.hpp"
 
 namespace pbrt
 {
@@ -21,9 +22,12 @@ namespace pbrt
 
     glm::vec3 MISRenderer::RenderPixel(const glm::ivec3 &pixel_coord)
     {
-        thread_local RNG rng{};
-        rng.SetSeed(static_cast<size_t>(pixel_coord.x + pixel_coord.y * 10000 + pixel_coord.z * 10000 * 10000));
-        auto ray = mCamera.GenerateRay(pixel_coord, {rng.Uniform(), rng.Uniform()});
+        // thread_local RNG rng{};
+        // rng.SetSeed(static_cast<size_t>(pixel_coord.x + pixel_coord.y * 10000 + pixel_coord.z * 10000 * 10000));
+        thread_local SobolSampler sobol;
+        sobol.StartPixelSample(glm::ivec2(pixel_coord.x, pixel_coord.y), pixel_coord.z);
+        auto ray = mCamera.GenerateRay(pixel_coord, sobol.Get2D());
+
         glm::vec3 beta = {1.f, 1.f, 1.f};
         glm::vec3 radiance = {0.f, 0.f, 0.f};
         bool last_is_delta = true;
@@ -58,7 +62,7 @@ namespace pbrt
                 q = glm::min(q, 0.9f);
                 if (q < 1.f)
                 {
-                    if (rng.Uniform() > q)
+                    if (sobol.Get1D() > q)
                     {
                         break;
                     }
@@ -82,10 +86,10 @@ namespace pbrt
                     if (!last_is_delta)
                     {
                         anyNonSpecularBounces = true;
-                        auto light_sample_info = light_sampler.SampleLight(rng.Uniform());
+                        auto light_sample_info = light_sampler.SampleLight(sobol.Get1D());
                         if (light_sample_info.has_value())
                         {
-                            auto light_info = light_sample_info->__light__->SampleLight(hit_info->__hitPoint__, mScene.GetRadius(), rng, MISC);
+                            auto light_info = light_sample_info->__light__->SampleLight(hit_info->__hitPoint__, mScene.GetRadius(), sobol, MISC);
                             if (light_info.has_value() && (!mScene.Intersect({hit_info->__hitPoint__, light_info->__lightPoint__ - hit_info->__hitPoint__}, 1e-5, 1.f - 1e-5)))
                             {
                                 glm::vec3 light_dir_local = frame.LocalFromWorld(light_info->__direction__);
@@ -106,7 +110,7 @@ namespace pbrt
                     {
                         hit_info->__material__->Regularize();
                     }
-                    auto bsdf_info = hit_info->__material__->SampleBSDF(hit_info->__hitPoint__, view_dir, rng);
+                    auto bsdf_info = hit_info->__material__->SampleBSDF(hit_info->__hitPoint__, view_dir, sobol);
 
                     if (!bsdf_info.has_value())
                     {

@@ -25,5 +25,6 @@ namespace pbrt
         Bounds GetBounds() const override { return mBVH.GetBounds(); }
         float GetArea() const override { return mBVH.GetArea(); }
         std::optional<ShapeInfo> SampleShape(const RNG &rng) const override { return mBVH.SampleShape(rng); }
+        std::optional<ShapeInfo> SampleShape(const Sampler &sequence) const override { return mBVH.SampleShape(sequence); }
     };
 }

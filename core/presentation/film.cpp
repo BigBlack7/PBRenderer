@@ -40,19 +40,19 @@ namespace pbrt
     void Film::Save(const std::filesystem::path &filename) const
     {
         std::vector<glm::vec3> buffer(mWidth * mHeight);
-        threadPool.ParallelFor(mWidth, mHeight, [&](size_t x, size_t y)
-                               {
-                                   auto pixel = GetPixel(x, y);
-                                   if (pixel.__sampleCount__ == 0)
-                                   {
-                                       return;
-                                   }
-                                   buffer[y * mWidth + x] = pixel.__color__ / static_cast<float>(pixel.__sampleCount__);
+        MasterThreadPool.ParallelFor(mWidth, mHeight, [&](size_t x, size_t y)
+                                     {
+                                         auto pixel = GetPixel(x, y);
+                                         if (pixel.__sampleCount__ == 0)
+                                         {
+                                             return;
+                                         }
+                                         buffer[y * mWidth + x] = pixel.__color__ / static_cast<float>(pixel.__sampleCount__);
 
-                                   // end
-                               },
-                               false);
-        threadPool.Wait();
+                                         // end
+                                     },
+                                     false);
+        MasterThreadPool.Wait();
 
         Image image(std::move(buffer), mWidth, mHeight);
         image.Save(filename);

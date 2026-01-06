@@ -23,7 +23,7 @@ namespace pbrt
         BVHState state{};
         size_t triangle_count = mOrderedTriangles.size();
         RecursiveSplit(mRoot, state);
-        threadPool.Wait();
+        MasterThreadPool.Wait();
 
         PBRT_DEBUG("Total Node Count: {}", (size_t)state.__totalNodeCount__);
         PBRT_DEBUG("Leaf Node Count: {}", state.__leafNodeCount__);
@@ -126,6 +126,14 @@ namespace pbrt
         auto sample_result = mTable.Sample(rng.Uniform());
         const auto &triangle = mOrderedTriangles[sample_result.__idx__];
         auto triangle_sample = triangle.SampleShape(rng);
+        return ShapeInfo{triangle_sample->__point__, triangle_sample->__normal__, triangle_sample->__pdf__ * sample_result.__prob__};
+    }
+
+    std::optional<ShapeInfo> BVH::SampleShape(const Sampler &sequence) const
+    {
+        auto sample_result = mTable.Sample(sequence.Get1D());
+        const auto &triangle = mOrderedTriangles[sample_result.__idx__];
+        auto triangle_sample = triangle.SampleShape(sequence);
         return ShapeInfo{triangle_sample->__point__, triangle_sample->__normal__, triangle_sample->__pdf__ * sample_result.__prob__};
     }
 
@@ -485,18 +493,18 @@ namespace pbrt
 
         if ((right->__end__ - left->__start__) > (128 * 1024))
         {
-            threadPool.ParallelFor(2, 1, [&, left, right](size_t i, size_t)
-                                   {
-                                       if (i == 0)
-                                       {
-                                           RecursiveSplit(left, state);
-                                       }
-                                       else
-                                       {
-                                           RecursiveSplit(right, state);
-                                       }
-                                       // end
-                                   });
+            MasterThreadPool.ParallelFor(2, 1, [&, left, right](size_t i, size_t)
+                                         {
+                                             if (i == 0)
+                                             {
+                                                 RecursiveSplit(left, state);
+                                             }
+                                             else
+                                             {
+                                                 RecursiveSplit(right, state);
+                                             }
+                                             // end
+                                         });
         }
         else
         {

@@ -2,7 +2,7 @@
 
 namespace pbrt
 {
-    ThreadPool threadPool{};
+    ThreadPool MasterThreadPool{};
     void ThreadPool::WorkerThread(ThreadPool *master)
     {
         while (master->mAlive)

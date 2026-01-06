@@ -19,6 +19,17 @@ namespace pbrt
         return LightInfo{surface_point + 2.f * scene_radius * light_direction, light_direction, mLe, 1.f / (4.f * PI)};
     }
 
+    std::optional<LightInfo> InfiniteLight::SampleLight(const glm::vec3 &surface_point, float scene_radius, const Sampler &sequence, bool MISC) const
+    {
+        if (MISC)
+        {
+            return {};
+        }
+
+        glm::vec3 light_direction = UniformSampleSphere(sequence);
+        return LightInfo{surface_point + 2.f * scene_radius * light_direction, light_direction, mLe, 1.f / (4.f * PI)};
+    }
+
     float InfiniteLight::PDF(const glm::vec3 &surface_point, const glm::vec3 &light_point, const glm::vec3 &normal, bool MISC) const
     {
         if (MISC)

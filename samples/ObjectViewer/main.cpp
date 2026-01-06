@@ -23,19 +23,20 @@ int main()
     PBRT_INFO("PBRT Init!");
 
     pbrt::Film film(1920, 1080);
-    pbrt::Camera camera{film, {-20.f, 5.f, 0.f}, {0.f, 0.f, 0.f}, 45.f};
+    pbrt::Camera camera{film, {-20.f, 7.f, 0.f}, {0.f, 2.f, 0.f}, 45.f};
 
     // models
-    pbrt::Model model("../../../assets/models/teapot.obj");
-    pbrt::Model bunny("../../../assets/models/bunny.obj");
+    pbrt::Model teapot("../../../assets/models/teapot.obj");
+    pbrt::Model ajax("../../../assets/models/ajax.obj");
     pbrt::Scene scene{};
 
-    scene.AddShape(model, new pbrt::DielectricMaterial{pbrt::RGB(255, 255, 255), 1.4f, 0.2f, 0.2f}, {-5.f, 0.4f, 4.5f}, {1.f, 1.f, 1.f}, {0.f, -10.f, 0.f});
-    scene.AddShape(bunny, new pbrt::IridescentMaterial{0.8f, 2.f, 3.f, 0.2f, 0.3f, 0.3f}, {-5.f, 0.4f, -4.5f}, {3.f, 3.f, 3.f}, {0.f, -70.f, 0.f});
+    scene.AddShape(teapot, new pbrt::DielectricMaterial{pbrt::RGB(255, 255, 255), 1.2f, 0.1f, 0.1f}, {-5.f, 0.4f, 4.5f}, {1.f, 1.f, 1.f}, {0.f, -10.f, 0.f});
+    scene.AddShape(teapot, new pbrt::ConductorMaterial{{0.1f, 1.2f, 1.8f}, {5.f, 2.5f, 2.f}, 0.2f, 0.2f}, {-5.f, 0.4f, -4.5f}, {1.f, 1.f, 1.f});
+    // scene.AddShape(ajax, new pbrt::IridescentMaterial{0.8f, 2.f, 3.f, 0.2f, 0.3f, 0.3f}, {-5.f, 0.4f, -4.5f}, {7.f, 7.f, 7.f}, {0.f, 90.f, 0.f});
 
     // light
-    pbrt::Image env_mnap("../../../assets/hdris/puresky04.exr");
-    scene.AddInfiniteLight(new pbrt::EnvLight{&env_mnap});
+    pbrt::Image env_map("../../../assets/hdris/puresky04.exr");
+    scene.AddInfiniteLight(new pbrt::EnvLight{&env_map});
     scene.Build();
 
     pbrt::MISRenderer mis{camera, scene};

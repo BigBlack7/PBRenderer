@@ -43,15 +43,17 @@ int main()
     for (int i = -3; i <= 3; i++)
     {
         float dinc = 0.1f + (i + 3) * 0.05f;
-        scene.AddShape(sphere, new pbrt::IridescentMaterial{dinc, 2.f, 3.f, 0.f, 0.01f, 0.01f}, {0.f, 4.5f, i * 2.f}, {0.8f, 0.8f, 0.8f});
+        float t = (i + 3) / 6.0f;
+        glm::vec3 base_color = glm::vec3(0.2f + 0.8f * t, 0.5f * (1.0f - t), 0.8f * (1.0f - t));
+        scene.AddShape(sphere, new pbrt::IridescentMaterial{dinc, 2.0f, 1.5f, 0.f, 0.01f, 0.01f, base_color}, {0.f, 4.5f, i * 2.f}, {0.8f, 0.8f, 0.8f});
     }
 
     scene.AddShape(model, new pbrt::DielectricMaterial{pbrt::RGB(221, 180, 221), 1.6f, 0.2f, 0.2f}, {-5.f, 0.4f, 1.5f}, {2.f, 2.f, 2.f});
     scene.AddShape(model, new pbrt::ConductorMaterial{{0.1f, 1.2f, 1.8f}, {5.f, 2.5f, 2.f}, 0.2f, 0.2f}, {-5.f, 0.4f, -1.5f}, {2.f, 2.f, 2.f});
 
     // light
-    pbrt::Image env_mnap("../../../assets/hdris/puresky04.exr");
-    scene.AddInfiniteLight(new pbrt::EnvLight{&env_mnap});
+    pbrt::Image env_map("../../../assets/hdris/puresky04.exr");
+    scene.AddInfiniteLight(new pbrt::EnvLight{&env_map});
     scene.Build();
 
     pbrt::MISRenderer mis{camera, scene};

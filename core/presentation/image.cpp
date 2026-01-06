@@ -48,18 +48,18 @@ namespace pbrt
              << mWidth << " " << mHeight << "\n255\n";
 
         std::vector<uint8_t> buffer(mWidth * mHeight * 3);
-        threadPool.ParallelFor(mWidth, mHeight, [&](size_t x, size_t y)
-                               {
-                                   auto idx = (y * mWidth + x) * 3;
-                                   RGB rgb(GetPixel(x, y));
-                                   buffer[idx + 0] = rgb.mRed;
-                                   buffer[idx + 1] = rgb.mGreen;
-                                   buffer[idx + 2] = rgb.mBlue;
-                                   // end
-                               },
-                               false);
+        MasterThreadPool.ParallelFor(mWidth, mHeight, [&](size_t x, size_t y)
+                                     {
+                                         auto idx = (y * mWidth + x) * 3;
+                                         RGB rgb(GetPixel(x, y));
+                                         buffer[idx + 0] = rgb.mRed;
+                                         buffer[idx + 1] = rgb.mGreen;
+                                         buffer[idx + 2] = rgb.mBlue;
+                                         // end
+                                     },
+                                     false);
 
-        threadPool.Wait();
+        MasterThreadPool.Wait();
         file.write(reinterpret_cast<const char *>(buffer.data()), buffer.size());
     }
 

@@ -72,6 +72,21 @@ namespace pbrt
         return glm::normalize(glm::vec3(mAlphaX * microfacet_normal_hemi.x, microfacet_normal_hemi.y, mAlphaZ * microfacet_normal_hemi.z));
     }
 
+    glm::vec3 Microfacet::SampleVisibleNormal(const glm::vec3 &view_dir, const Sampler &sequence) const
+    {
+        glm::vec3 view_dir_up = view_dir.y > 0 ? view_dir : -view_dir;
+        glm::vec3 view_dir_hemi = glm::normalize(glm::vec3(mAlphaX * view_dir_up.x, view_dir_up.y, mAlphaZ * view_dir_up.z));
+
+        glm::vec2 sample = UniformSampleUnitDisk(sequence.Get2D());
+        float h = glm::sqrt(1.f - sample.x * sample.x);
+        float t = 0.5f * (1.f + view_dir_hemi.y);
+        sample.y = t * sample.y + (1.f - t) * h;
+
+        Frame frame{view_dir_hemi};
+        glm::vec3 microfacet_normal_hemi = frame.WorldFromLocal({sample.x, glm::sqrt(1.f - sample.x * sample.x - sample.y * sample.y), sample.y});
+        return glm::normalize(glm::vec3(mAlphaX * microfacet_normal_hemi.x, microfacet_normal_hemi.y, mAlphaZ * microfacet_normal_hemi.z));
+    }
+
     float Microfacet::SlopeDistribution(const glm::vec2 &slope) const
     {
         return INV_PI / (glm::pow(1.f + slope.x * slope.x + slope.y * slope.y, 2));

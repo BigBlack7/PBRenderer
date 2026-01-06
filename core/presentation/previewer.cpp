@@ -173,15 +173,15 @@ namespace pbrt
         {
             film.Clear(); // 清空
         }
-        threadPool.ParallelFor(film.GetWidth(), film.GetHeight(), [&](size_t x, size_t y)
-                               {
-                                   for (size_t i = mCurrentSPP; i < mCurrentSPP + render_spp; i++)
-                                   {
-                                       film.AddSample(x, y, renderer->RenderPixel({x, y, i}));
-                                   }
-                                   // end
-                               });
-        threadPool.Wait();
+        MasterThreadPool.ParallelFor(film.GetWidth(), film.GetHeight(), [&](size_t x, size_t y)
+                                     {
+                                         for (size_t i = mCurrentSPP; i < mCurrentSPP + render_spp; i++)
+                                         {
+                                             film.AddSample(x, y, renderer->RenderPixel({x, y, i}));
+                                         }
+                                         // end
+                                     });
+        MasterThreadPool.Wait();
         mCurrentSPP += render_spp;
     }
 

@@ -25,16 +25,16 @@ namespace pbrt
         mRoot->__start__ = 0;
         mRoot->__end__ = mOrderedShapeBVHInfos.size();
         mRoot->__bounds__ = {};
-        for(const auto &shapeBVHInfo : mOrderedShapeBVHInfos)
+        for (const auto &shapeBVHInfo : mOrderedShapeBVHInfos)
         {
-            mRoot->__bounds__ .Expand(shapeBVHInfo.__bounds__);
+            mRoot->__bounds__.Expand(shapeBVHInfo.__bounds__);
         }
         mRoot->__depth__ = 1;
 
         SceneBVHState state{};
         size_t shapeBVHInfo_count = mOrderedShapeBVHInfos.size();
         RecursiveSplit(mRoot, state);
-        threadPool.Wait();
+        MasterThreadPool.Wait();
 
         PBRT_DEBUG("Total Scene Node Count: {}", (size_t)state.__totalNodeCount__);
         PBRT_DEBUG("Scene Leaf Node Count: {}", state.__leafNodeCount__);
@@ -261,18 +261,18 @@ namespace pbrt
 
         if ((right->__end__ - left->__start__) > (128 * 1024))
         {
-            threadPool.ParallelFor(2, 1, [&, left, right](size_t i, size_t)
-                                   {
-                                       if (i == 0)
-                                       {
-                                           RecursiveSplit(left, state);
-                                       }
-                                       else
-                                       {
-                                           RecursiveSplit(right, state);
-                                       }
-                                       // end
-                                   });
+            MasterThreadPool.ParallelFor(2, 1, [&, left, right](size_t i, size_t)
+                                         {
+                                             if (i == 0)
+                                             {
+                                                 RecursiveSplit(left, state);
+                                             }
+                                             else
+                                             {
+                                                 RecursiveSplit(right, state);
+                                             }
+                                             // end
+                                         });
         }
         else
         {

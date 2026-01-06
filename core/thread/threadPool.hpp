@@ -39,5 +39,5 @@ namespace pbrt
         Task *GetTask();
     };
 
-    extern ThreadPool threadPool;
+    extern ThreadPool MasterThreadPool;
 }

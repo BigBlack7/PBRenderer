@@ -17,6 +17,9 @@ namespace pbrt
         float mKappa3; // 基底消光系数    0.f - 5.f  0.f
         Microfacet mMicrofacet;
 
+        // 电介质漫反射基底
+        glm::vec3 mBaseColor{};
+
     private:
         void FresnelDielectric(float cos_theta1, float n1, float n2, glm::vec2 &R, glm::vec2 &phi) const;
 
@@ -29,10 +32,11 @@ namespace pbrt
         glm::vec3 ComputeIridescence(float cos_theta1, float cos_theta2) const;
 
     public:
-        IridescentMaterial(float dinc, float eta2, float eta3, float kappa3, float alpha_x, float alpha_z)
-            : mDinc(dinc), mEta2(eta2), mEta3(eta3), mKappa3(kappa3), mMicrofacet(alpha_x, alpha_z) {}
+        IridescentMaterial(float dinc, float eta2, float eta3, float kappa3, float alpha_x, float alpha_z, const glm::vec3 &base_color = glm::vec3(1.0f))
+            : mDinc(dinc), mEta2(eta2), mEta3(eta3), mKappa3(kappa3), mMicrofacet(alpha_x, alpha_z), mBaseColor(base_color) {}
 
         std::optional<BSDFInfo> SampleBSDF(const glm::vec3 &hit_point, const glm::vec3 &view_dir, const RNG &rng) const override;
+        std::optional<BSDFInfo> SampleBSDF(const glm::vec3 &hit_point, const glm::vec3 &view_dir, const Sampler &sequence) const override;
         glm::vec3 BSDF(const glm::vec3 &hit_point, const glm::vec3 &light_dir, const glm::vec3 &view_dir) const override;
         float PDF(const glm::vec3 &hit_point, const glm::vec3 &light_dir, const glm::vec3 &view_dir) const override;
         bool IsDeltaDistribution() const override { return mMicrofacet.IsDeltaDistribution(); }
