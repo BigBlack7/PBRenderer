@@ -1,7 +1,8 @@
-﻿#pragma once
+#pragma once
 #include "sampler.hpp"
 #include <cstdint>
 #include <vector>
+#include <limits>
 
 namespace pbrt
 {
@@ -20,6 +21,7 @@ namespace pbrt
         static uint32_t sLog2Resolution;
 
         float SampleDimension(int dimension) const;
+        uint32_t ComputeScrambleSeed(int dimension) const;
 
         static uint32_t Hash(uint32_t a, uint32_t b);
 
@@ -33,6 +35,6 @@ namespace pbrt
         glm::vec2 Get2D() const override;
         void StartPixelSample(const glm::ivec2 &pixel, int sample_index) override;
         std::unique_ptr<Sampler> Clone() const override;
-        int GetSampleIndex() const override { return static_cast<int>(mSampleIndex); }
+        int GetSampleIndex() const override;
     };
 }

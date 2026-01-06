@@ -1,7 +1,8 @@
-﻿#include "MISRenderer.hpp"
+#include "MISRenderer.hpp"
 #include "utils/frame.hpp"
 #include "utils/rng.hpp"
 #include "sequence/sobolSampler.hpp"
+#include <mutex>
 
 namespace pbrt
 {
@@ -24,8 +25,11 @@ namespace pbrt
     {
         // thread_local RNG rng{};
         // rng.SetSeed(static_cast<size_t>(pixel_coord.x + pixel_coord.y * 10000 + pixel_coord.z * 10000 * 10000));
+        static std::once_flag sobol_extent_flag;
+        std::call_once(sobol_extent_flag, [this]() {
+            SobolSampler::SetSampleExtent({static_cast<int>(mCamera.GetFilm().GetWidth()), static_cast<int>(mCamera.GetFilm().GetHeight())});
+        });
         thread_local SobolSampler sobol;
-        SobolSampler::SetSampleExtent({static_cast<int>(mCamera.GetFilm().GetWidth()), static_cast<int>(mCamera.GetFilm().GetHeight())});
         sobol.StartPixelSample(glm::ivec2(pixel_coord.x, pixel_coord.y), pixel_coord.z);
         auto ray = mCamera.GenerateRay(pixel_coord, sobol.Get2D());
 

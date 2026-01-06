@@ -1,7 +1,9 @@
 ﻿#pragma once
 #include "utils/rng.hpp"
+#include "sequence/sampler.hpp"
 #include <glm/glm.hpp>
 #include <optional>
+#include <cstdint>
 
 namespace pbrt
 {
@@ -26,7 +28,12 @@ namespace pbrt
         virtual LightType GetLightType() const = 0;
         virtual float Phi(float scene_radius) const = 0; // 光源功率 radiant flux
         virtual std::optional<LightInfo> SampleLight(const glm::vec3 &surface_point, float scene_radius, const RNG &rng, bool MISC) const = 0;
-        virtual std::optional<LightInfo> SampleLight(const glm::vec3 &surface_point, float scene_radius, const Sampler &sequence, bool MISC) const = 0;
+        virtual std::optional<LightInfo> SampleLight(const glm::vec3 &surface_point, float scene_radius, const Sampler &sequence, bool MISC) const
+        {
+            uint32_t seed = static_cast<uint32_t>(sequence.GetSampleIndex()) ^ 0x9e3779b9u;
+            RNG seeded_rng(seed);
+            return SampleLight(surface_point, scene_radius, seeded_rng, MISC);
+        }
         
         virtual float PDF(const glm::vec3 &surface_point, const glm::vec3 &light_point, const glm::vec3 &normal, bool MISC) const = 0;
 

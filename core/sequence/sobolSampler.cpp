@@ -2,6 +2,8 @@
 #include "sobolmatrices.hpp"
 
 #include <algorithm>
+#include <limits>
+#include <spdlog/spdlog.h>
 
 namespace pbrt
 {
@@ -9,6 +11,7 @@ namespace pbrt
     {
         // Clamp to keep Sobol interval indices within the 52-bit direction table.
         constexpr uint32_t kMaxSobolResolutionLog2 = 16;
+        constexpr uint32_t kHashMixConstant = 0x9e3779b9u;
 
         inline uint32_t ReverseBits32(uint32_t v)
         {
@@ -25,6 +28,7 @@ namespace pbrt
             explicit FastOwenScrambler(uint32_t seed) : seed(seed) {}
             uint32_t operator()(uint32_t v) const
             {
+                // Constants follow PBRT-v4's fast Owen scrambling formulation.
                 v = ReverseBits32(v);
                 v ^= v * 0x3d20adea;
                 v += seed;
@@ -107,7 +111,7 @@ namespace pbrt
         sResolution = resolution;
         uint32_t max_dim = static_cast<uint32_t>(std::max(resolution.x, resolution.y));
         uint32_t log2_scale = 0;
-        while ((1u << log2_scale) < max_dim)
+        while (log2_scale < kMaxSobolResolutionLog2 && (1u << log2_scale) < max_dim)
         {
             ++log2_scale;
         }
@@ -115,10 +119,20 @@ namespace pbrt
         sLog2Resolution = log2_scale;
     }
 
+    uint32_t SobolSampler::ComputeScrambleSeed(int dimension) const
+    {
+        int safe_dim = std::max(0, dimension);
+        uint32_t dim_index = static_cast<uint32_t>(std::min(safe_dim, NSobolDimensions - 1));
+        uint64_t mix = static_cast<uint64_t>(dim_index) * kHashMixConstant;
+        uint32_t base_seed = Hash(static_cast<uint32_t>(mPixel.x), static_cast<uint32_t>(mPixel.y));
+        return Hash(base_seed, mSeed + static_cast<uint32_t>(mix));
+    }
+
     float SobolSampler::SampleDimension(int dimension) const
     {
-        uint32_t scramble_seed = Hash(Hash(static_cast<uint32_t>(mPixel.x), static_cast<uint32_t>(mPixel.y)), mSeed + static_cast<uint32_t>(dimension * 0x9e3779b9));
-        return SobolSample(mSampleIndex, dimension, FastOwenScrambler(scramble_seed));
+        int safe_dim = std::max(0, dimension);
+        uint32_t scramble_seed = ComputeScrambleSeed(safe_dim);
+        return SobolSample(mSampleIndex, safe_dim, FastOwenScrambler(scramble_seed));
     }
 
     void SobolSampler::StartPixelSample(const glm::ivec2 &pixel, int sample_index)
@@ -129,8 +143,13 @@ namespace pbrt
         mLog2Resolution = sLog2Resolution;
         if (mLog2Resolution == 0)
         {
-            uint32_t max_coord = static_cast<uint32_t>(std::max(pixel.x, pixel.y)) + 1;
-            while ((1u << mLog2Resolution) < max_coord)
+            // Clamp negative coordinates to zero and convert from index to count.
+            uint32_t max_coord = static_cast<uint32_t>(std::max(0, std::max(pixel.x, pixel.y)));
+            if (max_coord < std::numeric_limits<uint32_t>::max())
+            {
+                ++max_coord;
+            }
+            while (mLog2Resolution < kMaxSobolResolutionLog2 && (1u << mLog2Resolution) < max_coord)
             {
                 ++mLog2Resolution;
             }
@@ -138,6 +157,21 @@ namespace pbrt
         }
 
         mSampleIndex = SobolIntervalToIndex(mLog2Resolution, static_cast<uint64_t>(sample_index), pixel);
+    }
+
+    int SobolSampler::GetSampleIndex() const
+    {
+        if (mSampleIndex > static_cast<uint64_t>(std::numeric_limits<int>::max()))
+        {
+            static bool warned = false;
+            if (!warned)
+            {
+                warned = true;
+                spdlog::warn("Sobol sample index {} exceeds int range; clamping to INT_MAX", mSampleIndex);
+            }
+            return std::numeric_limits<int>::max();
+        }
+        return static_cast<int>(mSampleIndex);
     }
 
     float SobolSampler::Get1D() const
