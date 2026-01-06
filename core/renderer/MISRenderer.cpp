@@ -25,6 +25,7 @@ namespace pbrt
         // thread_local RNG rng{};
         // rng.SetSeed(static_cast<size_t>(pixel_coord.x + pixel_coord.y * 10000 + pixel_coord.z * 10000 * 10000));
         thread_local SobolSampler sobol;
+        SobolSampler::SetSampleExtent({static_cast<int>(mCamera.GetFilm().GetWidth()), static_cast<int>(mCamera.GetFilm().GetHeight())});
         sobol.StartPixelSample(glm::ivec2(pixel_coord.x, pixel_coord.y), pixel_coord.z);
         auto ray = mCamera.GenerateRay(pixel_coord, sobol.Get2D());
 
