@@ -26,10 +26,10 @@ namespace pbrt
         return ShapeInfo{sample_point, __normal__, 1.f / GetArea()};
     }
 
-    std::optional<ShapeInfo> Circle::SampleShape(const Sampler &sequence) const
-    {
-        glm::vec2 sample_local = UniformSampleUnitDisk(sequence.Get2D()) * __radius__;
-        glm::vec3 sample_point = __point__ + sample_local.x * __xAxis__ + sample_local.y * __zAxis__;
-        return ShapeInfo{sample_point, __normal__, 1.f / GetArea()};
-    }
+    // std::optional<ShapeInfo> Circle::SampleShape(const Sampler &sequence) const
+    // {
+    //     glm::vec2 sample_local = UniformSampleUnitDisk(sequence.Get2D()) * __radius__;
+    //     glm::vec3 sample_point = __point__ + sample_local.x * __xAxis__ + sample_local.y * __zAxis__;
+    //     return ShapeInfo{sample_point, __normal__, 1.f / GetArea()};
+    // }
 }

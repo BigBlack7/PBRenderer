@@ -53,14 +53,14 @@ namespace pbrt
         return glm::normalize(res);
     }
 
-    inline glm::vec3 UniformSampleSphere(const Sampler &sequence)
-    {
-        glm::vec3 res;
-        do
-        {
-            res = {sequence.Get1D(), sequence.Get1D(), sequence.Get1D()};
-            res = res * 2.f - 1.f;
-        } while (glm::length(res) > 1.f);
-        return glm::normalize(res);
-    }
+    // inline glm::vec3 UniformSampleSphere(const Sampler &sequence)
+    // {
+    //     glm::vec3 res;
+    //     do
+    //     {
+    //         res = {sequence.Get1D(), sequence.Get1D(), sequence.Get1D()};
+    //         res = res * 2.f - 1.f;
+    //     } while (glm::length(res) > 1.f);
+    //     return glm::normalize(res);
+    // }
 }

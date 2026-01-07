@@ -1,137 +1,103 @@
 ﻿#include "sobolSampler.hpp"
+#include "sobolmatrices.hpp"
+#include "utils/logger.hpp"
 #include <algorithm>
+#include <limits>
 
 namespace pbrt
 {
-    // Sobol direction numbers for first 32 dimensions
-    // These are the primitive polynomials and direction numbers from Joe and Kuo (2008)
-    // See: https://web.maths.unsw.edu.au/~fkuo/sobol/
-    const uint32_t SobolSampler::SobolMatrices32[32][32] = {
-        // Dimension 0 (identity)
-        {0x80000000, 0x40000000, 0x20000000, 0x10000000, 0x8000000, 0x4000000, 0x2000000, 0x1000000,
-         0x800000, 0x400000, 0x200000, 0x100000, 0x80000, 0x40000, 0x20000, 0x10000,
-         0x8000, 0x4000, 0x2000, 0x1000, 0x800, 0x400, 0x200, 0x100,
-         0x80, 0x40, 0x20, 0x10, 0x8, 0x4, 0x2, 0x1},
-        // Dimension 1
-        {0x80000000, 0xc0000000, 0xa0000000, 0xf0000000, 0x88000000, 0xcc000000, 0xaa000000, 0xff000000,
-         0x80800000, 0xc0c00000, 0xa0a00000, 0xf0f00000, 0x88880000, 0xcccc0000, 0xaaaa0000, 0xffff0000,
-         0x80008000, 0xc000c000, 0xa000a000, 0xf000f000, 0x88008800, 0xcc00cc00, 0xaa00aa00, 0xff00ff00,
-         0x80808080, 0xc0c0c0c0, 0xa0a0a0a0, 0xf0f0f0f0, 0x88888888, 0xcccccccc, 0xaaaaaaaa, 0xffffffff},
-        // Dimension 2
-        {0x80000000, 0xc0000000, 0x60000000, 0x90000000, 0xe8000000, 0x5c000000, 0x8e000000, 0xc5000000,
-         0x68800000, 0x9cc00000, 0xee600000, 0x55900000, 0x80680000, 0xc09c0000, 0x60ee0000, 0x90550000,
-         0xe8808000, 0x5cc0c000, 0x8e606000, 0xc5909000, 0x68e8e800, 0x9c5c5c00, 0xee8e8e00, 0x55c5c500,
-         0x80686868, 0xc09c9c9c, 0x60eeeeee, 0x90555555, 0xe8808080, 0x5cc0c0c0, 0x8e606060, 0xc5909090},
-        // Dimension 3
-        {0x80000000, 0xc0000000, 0x20000000, 0x50000000, 0xf8000000, 0x74000000, 0xa2000000, 0x93000000,
-         0xd8800000, 0x25400000, 0x59e00000, 0xe6d00000, 0x78080000, 0xb40c0000, 0x82020000, 0xc3050000,
-         0x208f8000, 0x51474000, 0xfbaa2000, 0x75d93000, 0xa0858800, 0x914e5400, 0xdbe79e00, 0x26667d00,
-         0x58b1b080, 0xe6d98940, 0x78484e20, 0xb40c2793, 0x821205f8, 0xc354a574, 0x208110a2, 0x51402893},
-        // Dimension 4
-        {0x80000000, 0xc0000000, 0x20000000, 0x50000000, 0xf8000000, 0xb4000000, 0xf2000000, 0x59000000,
-         0x89800000, 0x91400000, 0xf3e00000, 0xad500000, 0x13880000, 0x4f0c0000, 0xa1420000, 0xe6850000,
-         0x1bbf8000, 0x3fb74000, 0x96e2a000, 0x763dd000, 0xa81b5800, 0xfa94a400, 0xc4cdf200, 0x2e925900,
-         0x60f38980, 0x9bed5540, 0xcf11a3e0, 0x06c34ad5, 0x4e711388, 0xb1594f0c, 0x1e0be1a1, 0x3dcf0ee6},
-        // Additional dimensions 5-31 (abbreviated for space - full tables available from Joe & Kuo)
-        // For a production implementation, include all 32 dimensions
-        // Here we provide 5 dimensions which is enough for most path tracing (2D per bounce)
-        {0x80000000, 0xc0000000, 0x20000000, 0x50000000, 0xf8000000, 0xb4000000, 0xf2000000, 0x59000000,
-         0x89800000, 0x91400000, 0xf3e00000, 0xad500000, 0x13880000, 0x4f0c0000, 0xa1420000, 0xe6850000,
-         0x1bbf8000, 0x3fb74000, 0x96e2a000, 0x763dd000, 0xa81b5800, 0xfa94a400, 0xc4cdf200, 0x2e925900,
-         0x60f38980, 0x9bed5540, 0xcf11a3e0, 0x06c34ad5, 0x4e711388, 0xb1594f0c, 0x1e0be1a1, 0x3dcf0ee6},
-        // Dimensions 6-31: Use dimension 5 as fallback (or implement full tables)
-        {0x80000000, 0xc0000000, 0x20000000, 0x50000000, 0xf8000000, 0xb4000000, 0xf2000000, 0x59000000,
-         0x89800000, 0x91400000, 0xf3e00000, 0xad500000, 0x13880000, 0x4f0c0000, 0xa1420000, 0xe6850000,
-         0x1bbf8000, 0x3fb74000, 0x96e2a000, 0x763dd000, 0xa81b5800, 0xfa94a400, 0xc4cdf200, 0x2e925900,
-         0x60f38980, 0x9bed5540, 0xcf11a3e0, 0x06c34ad5, 0x4e711388, 0xb1594f0c, 0x1e0be1a1, 0x3dcf0ee6},
-        {0x80000000, 0xc0000000, 0x20000000, 0x50000000, 0xf8000000, 0xb4000000, 0xf2000000, 0x59000000,
-         0x89800000, 0x91400000, 0xf3e00000, 0xad500000, 0x13880000, 0x4f0c0000, 0xa1420000, 0xe6850000,
-         0x1bbf8000, 0x3fb74000, 0x96e2a000, 0x763dd000, 0xa81b5800, 0xfa94a400, 0xc4cdf200, 0x2e925900,
-         0x60f38980, 0x9bed5540, 0xcf11a3e0, 0x06c34ad5, 0x4e711388, 0xb1594f0c, 0x1e0be1a1, 0x3dcf0ee6},
-        {0x80000000, 0xc0000000, 0x20000000, 0x50000000, 0xf8000000, 0xb4000000, 0xf2000000, 0x59000000,
-         0x89800000, 0x91400000, 0xf3e00000, 0xad500000, 0x13880000, 0x4f0c0000, 0xa1420000, 0xe6850000,
-         0x1bbf8000, 0x3fb74000, 0x96e2a000, 0x763dd000, 0xa81b5800, 0xfa94a400, 0xc4cdf200, 0x2e925900,
-         0x60f38980, 0x9bed5540, 0xcf11a3e0, 0x06c34ad5, 0x4e711388, 0xb1594f0c, 0x1e0be1a1, 0x3dcf0ee6},
-        {0x80000000, 0xc0000000, 0x20000000, 0x50000000, 0xf8000000, 0xb4000000, 0xf2000000, 0x59000000,
-         0x89800000, 0x91400000, 0xf3e00000, 0xad500000, 0x13880000, 0x4f0c0000, 0xa1420000, 0xe6850000,
-         0x1bbf8000, 0x3fb74000, 0x96e2a000, 0x763dd000, 0xa81b5800, 0xfa94a400, 0xc4cdf200, 0x2e925900,
-         0x60f38980, 0x9bed5540, 0xcf11a3e0, 0x06c34ad5, 0x4e711388, 0xb1594f0c, 0x1e0be1a1, 0x3dcf0ee6},
-        {0x80000000, 0xc0000000, 0x20000000, 0x50000000, 0xf8000000, 0xb4000000, 0xf2000000, 0x59000000,
-         0x89800000, 0x91400000, 0xf3e00000, 0xad500000, 0x13880000, 0x4f0c0000, 0xa1420000, 0xe6850000,
-         0x1bbf8000, 0x3fb74000, 0x96e2a000, 0x763dd000, 0xa81b5800, 0xfa94a400, 0xc4cdf200, 0x2e925900,
-         0x60f38980, 0x9bed5540, 0xcf11a3e0, 0x06c34ad5, 0x4e711388, 0xb1594f0c, 0x1e0be1a1, 0x3dcf0ee6},
-        {0x80000000, 0xc0000000, 0x20000000, 0x50000000, 0xf8000000, 0xb4000000, 0xf2000000, 0x59000000,
-         0x89800000, 0x91400000, 0xf3e00000, 0xad500000, 0x13880000, 0x4f0c0000, 0xa1420000, 0xe6850000,
-         0x1bbf8000, 0x3fb74000, 0x96e2a000, 0x763dd000, 0xa81b5800, 0xfa94a400, 0xc4cdf200, 0x2e925900,
-         0x60f38980, 0x9bed5540, 0xcf11a3e0, 0x06c34ad5, 0x4e711388, 0xb1594f0c, 0x1e0be1a1, 0x3dcf0ee6},
-        {0x80000000, 0xc0000000, 0x20000000, 0x50000000, 0xf8000000, 0xb4000000, 0xf2000000, 0x59000000,
-         0x89800000, 0x91400000, 0xf3e00000, 0xad500000, 0x13880000, 0x4f0c0000, 0xa1420000, 0xe6850000,
-         0x1bbf8000, 0x3fb74000, 0x96e2a000, 0x763dd000, 0xa81b5800, 0xfa94a400, 0xc4cdf200, 0x2e925900,
-         0x60f38980, 0x9bed5540, 0xcf11a3e0, 0x06c34ad5, 0x4e711388, 0xb1594f0c, 0x1e0be1a1, 0x3dcf0ee6},
-        {0x80000000, 0xc0000000, 0x20000000, 0x50000000, 0xf8000000, 0xb4000000, 0xf2000000, 0x59000000,
-         0x89800000, 0x91400000, 0xf3e00000, 0xad500000, 0x13880000, 0x4f0c0000, 0xa1420000, 0xe6850000,
-         0x1bbf8000, 0x3fb74000, 0x96e2a000, 0x763dd000, 0xa81b5800, 0xfa94a400, 0xc4cdf200, 0x2e925900,
-         0x60f38980, 0x9bed5540, 0xcf11a3e0, 0x06c34ad5, 0x4e711388, 0xb1594f0c, 0x1e0be1a1, 0x3dcf0ee6},
-        {0x80000000, 0xc0000000, 0x20000000, 0x50000000, 0xf8000000, 0xb4000000, 0xf2000000, 0x59000000,
-         0x89800000, 0x91400000, 0xf3e00000, 0xad500000, 0x13880000, 0x4f0c0000, 0xa1420000, 0xe6850000,
-         0x1bbf8000, 0x3fb74000, 0x96e2a000, 0x763dd000, 0xa81b5800, 0xfa94a400, 0xc4cdf200, 0x2e925900,
-         0x60f38980, 0x9bed5540, 0xcf11a3e0, 0x06c34ad5, 0x4e711388, 0xb1594f0c, 0x1e0be1a1, 0x3dcf0ee6},
-        {0x80000000, 0xc0000000, 0x20000000, 0x50000000, 0xf8000000, 0xb4000000, 0xf2000000, 0x59000000,
-         0x89800000, 0x91400000, 0xf3e00000, 0xad500000, 0x13880000, 0x4f0c0000, 0xa1420000, 0xe6850000,
-         0x1bbf8000, 0x3fb74000, 0x96e2a000, 0x763dd000, 0xa81b5800, 0xfa94a400, 0xc4cdf200, 0x2e925900,
-         0x60f38980, 0x9bed5540, 0xcf11a3e0, 0x06c34ad5, 0x4e711388, 0xb1594f0c, 0x1e0be1a1, 0x3dcf0ee6},
-        {0x80000000, 0xc0000000, 0x20000000, 0x50000000, 0xf8000000, 0xb4000000, 0xf2000000, 0x59000000,
-         0x89800000, 0x91400000, 0xf3e00000, 0xad500000, 0x13880000, 0x4f0c0000, 0xa1420000, 0xe6850000,
-         0x1bbf8000, 0x3fb74000, 0x96e2a000, 0x763dd000, 0xa81b5800, 0xfa94a400, 0xc4cdf200, 0x2e925900,
-         0x60f38980, 0x9bed5540, 0xcf11a3e0, 0x06c34ad5, 0x4e711388, 0xb1594f0c, 0x1e0be1a1, 0x3dcf0ee6},
-        {0x80000000, 0xc0000000, 0x20000000, 0x50000000, 0xf8000000, 0xb4000000, 0xf2000000, 0x59000000,
-         0x89800000, 0x91400000, 0xf3e00000, 0xad500000, 0x13880000, 0x4f0c0000, 0xa1420000, 0xe6850000,
-         0x1bbf8000, 0x3fb74000, 0x96e2a000, 0x763dd000, 0xa81b5800, 0xfa94a400, 0xc4cdf200, 0x2e925900,
-         0x60f38980, 0x9bed5540, 0xcf11a3e0, 0x06c34ad5, 0x4e711388, 0xb1594f0c, 0x1e0be1a1, 0x3dcf0ee6},
-        {0x80000000, 0xc0000000, 0x20000000, 0x50000000, 0xf8000000, 0xb4000000, 0xf2000000, 0x59000000,
-         0x89800000, 0x91400000, 0xf3e00000, 0xad500000, 0x13880000, 0x4f0c0000, 0xa1420000, 0xe6850000,
-         0x1bbf8000, 0x3fb74000, 0x96e2a000, 0x763dd000, 0xa81b5800, 0xfa94a400, 0xc4cdf200, 0x2e925900,
-         0x60f38980, 0x9bed5540, 0xcf11a3e0, 0x06c34ad5, 0x4e711388, 0xb1594f0c, 0x1e0be1a1, 0x3dcf0ee6},
-        {0x80000000, 0xc0000000, 0x20000000, 0x50000000, 0xf8000000, 0xb4000000, 0xf2000000, 0x59000000,
-         0x89800000, 0x91400000, 0xf3e00000, 0xad500000, 0x13880000, 0x4f0c0000, 0xa1420000, 0xe6850000,
-         0x1bbf8000, 0x3fb74000, 0x96e2a000, 0x763dd000, 0xa81b5800, 0xfa94a400, 0xc4cdf200, 0x2e925900,
-         0x60f38980, 0x9bed5540, 0xcf11a3e0, 0x06c34ad5, 0x4e711388, 0xb1594f0c, 0x1e0be1a1, 0x3dcf0ee6},
-        {0x80000000, 0xc0000000, 0x20000000, 0x50000000, 0xf8000000, 0xb4000000, 0xf2000000, 0x59000000,
-         0x89800000, 0x91400000, 0xf3e00000, 0xad500000, 0x13880000, 0x4f0c0000, 0xa1420000, 0xe6850000,
-         0x1bbf8000, 0x3fb74000, 0x96e2a000, 0x763dd000, 0xa81b5800, 0xfa94a400, 0xc4cdf200, 0x2e925900,
-         0x60f38980, 0x9bed5540, 0xcf11a3e0, 0x06c34ad5, 0x4e711388, 0xb1594f0c, 0x1e0be1a1, 0x3dcf0ee6},
-        {0x80000000, 0xc0000000, 0x20000000, 0x50000000, 0xf8000000, 0xb4000000, 0xf2000000, 0x59000000,
-         0x89800000, 0x91400000, 0xf3e00000, 0xad500000, 0x13880000, 0x4f0c0000, 0xa1420000, 0xe6850000,
-         0x1bbf8000, 0x3fb74000, 0x96e2a000, 0x763dd000, 0xa81b5800, 0xfa94a400, 0xc4cdf200, 0x2e925900,
-         0x60f38980, 0x9bed5540, 0xcf11a3e0, 0x06c34ad5, 0x4e711388, 0xb1594f0c, 0x1e0be1a1, 0x3dcf0ee6},
-        {0x80000000, 0xc0000000, 0x20000000, 0x50000000, 0xf8000000, 0xb4000000, 0xf2000000, 0x59000000,
-         0x89800000, 0x91400000, 0xf3e00000, 0xad500000, 0x13880000, 0x4f0c0000, 0xa1420000, 0xe6850000,
-         0x1bbf8000, 0x3fb74000, 0x96e2a000, 0x763dd000, 0xa81b5800, 0xfa94a400, 0xc4cdf200, 0x2e925900,
-         0x60f38980, 0x9bed5540, 0xcf11a3e0, 0x06c34ad5, 0x4e711388, 0xb1594f0c, 0x1e0be1a1, 0x3dcf0ee6},
-        {0x80000000, 0xc0000000, 0x20000000, 0x50000000, 0xf8000000, 0xb4000000, 0xf2000000, 0x59000000,
-         0x89800000, 0x91400000, 0xf3e00000, 0xad500000, 0x13880000, 0x4f0c0000, 0xa1420000, 0xe6850000,
-         0x1bbf8000, 0x3fb74000, 0x96e2a000, 0x763dd000, 0xa81b5800, 0xfa94a400, 0xc4cdf200, 0x2e925900,
-         0x60f38980, 0x9bed5540, 0xcf11a3e0, 0x06c34ad5, 0x4e711388, 0xb1594f0c, 0x1e0be1a1, 0x3dcf0ee6},
-        {0x80000000, 0xc0000000, 0x20000000, 0x50000000, 0xf8000000, 0xb4000000, 0xf2000000, 0x59000000,
-         0x89800000, 0x91400000, 0xf3e00000, 0xad500000, 0x13880000, 0x4f0c0000, 0xa1420000, 0xe6850000,
-         0x1bbf8000, 0x3fb74000, 0x96e2a000, 0x763dd000, 0xa81b5800, 0xfa94a400, 0xc4cdf200, 0x2e925900,
-         0x60f38980, 0x9bed5540, 0xcf11a3e0, 0x06c34ad5, 0x4e711388, 0xb1594f0c, 0x1e0be1a1, 0x3dcf0ee6},
-        {0x80000000, 0xc0000000, 0x20000000, 0x50000000, 0xf8000000, 0xb4000000, 0xf2000000, 0x59000000,
-         0x89800000, 0x91400000, 0xf3e00000, 0xad500000, 0x13880000, 0x4f0c0000, 0xa1420000, 0xe6850000,
-         0x1bbf8000, 0x3fb74000, 0x96e2a000, 0x763dd000, 0xa81b5800, 0xfa94a400, 0xc4cdf200, 0x2e925900,
-         0x60f38980, 0x9bed5540, 0xcf11a3e0, 0x06c34ad5, 0x4e711388, 0xb1594f0c, 0x1e0be1a1, 0x3dcf0ee6},
-        {0x80000000, 0xc0000000, 0x20000000, 0x50000000, 0xf8000000, 0xb4000000, 0xf2000000, 0x59000000,
-         0x89800000, 0x91400000, 0xf3e00000, 0xad500000, 0x13880000, 0x4f0c0000, 0xa1420000, 0xe6850000,
-         0x1bbf8000, 0x3fb74000, 0x96e2a000, 0x763dd000, 0xa81b5800, 0xfa94a400, 0xc4cdf200, 0x2e925900,
-         0x60f38980, 0x9bed5540, 0xcf11a3e0, 0x06c34ad5, 0x4e711388, 0xb1594f0c, 0x1e0be1a1, 0x3dcf0ee6}
-        // end
-    };
+
+    namespace
+    {
+        // Clamp to keep Sobol interval indices within the 52-bit direction table.
+        constexpr uint32_t MaxSobolResolutionLog2 = 16;
+        constexpr uint32_t HashMixConstant = 0x9e3779b9u;
+
+        inline uint32_t ReverseBits32(uint32_t v)
+        {
+            v = (v << 16) | (v >> 16);
+            v = ((v & 0x00ff00ffu) << 8) | ((v & 0xff00ff00u) >> 8);
+            v = ((v & 0x0f0f0f0fu) << 4) | ((v & 0xf0f0f0f0u) >> 4);
+            v = ((v & 0x33333333u) << 2) | ((v & 0xccccccccu) >> 2);
+            v = ((v & 0x55555555u) << 1) | ((v & 0xaaaaaaaau) >> 1);
+            return v;
+        }
+
+        struct FastOwenScrambler
+        {
+            explicit FastOwenScrambler(uint32_t seed) : __seed__(seed) {}
+            uint32_t operator()(uint32_t v) const
+            {
+                // Constants follow PBRT-v4's fast Owen scrambling formulation.
+                v = ReverseBits32(v);
+                v ^= v * 0x3d20adea;
+                v += __seed__;
+                v *= (__seed__ >> 16) | 1;
+                v ^= v * 0x05526c56;
+                v ^= v * 0x53a22864;
+                return ReverseBits32(v);
+            }
+            uint32_t __seed__;
+        };
+
+        template <typename Scrambler>
+        inline float SobolSample(uint64_t index, int dimension, Scrambler scrambler)
+        {
+            int dim = std::min(dimension, NSobolDimensions - 1);
+            uint32_t v = 0;
+            for (int i = dim * SobolMatrixSize; index != 0 && i < (dim + 1) * SobolMatrixSize; ++i, index >>= 1)
+            {
+                if (index & 1)
+                {
+                    v ^= SobolMatrices32[i];
+                }
+            }
+            v = scrambler(v);
+            return std::min(v * 0x1p-32f, 0.99999994f);
+        }
+
+        inline uint64_t SobolIntervalToIndex(uint32_t log2_scale, uint64_t frame, const glm::ivec2 &p)
+        {
+            if (log2_scale == 0)
+            {
+                return frame;
+            }
+
+            const uint32_t m2 = log2_scale << 1;
+            uint64_t index = frame << m2;
+
+            uint64_t delta = 0;
+            for (int c = 0; frame; frame >>= 1, ++c)
+            {
+                if (frame & 1)
+                {
+                    delta ^= VdCSobolMatrices[log2_scale - 1][c];
+                }
+            }
+
+            uint64_t b = (static_cast<uint64_t>(static_cast<uint32_t>(p.x)) << log2_scale) | static_cast<uint32_t>(p.y);
+            b ^= delta;
+
+            for (int c = 0; b; b >>= 1, ++c)
+            {
+                if (b & 1)
+                {
+                    index ^= VdCSobolMatricesInv[log2_scale - 1][c];
+                }
+            }
+
+            return index;
+        }
+    } // namespace
+
+    glm::ivec2 SobolSampler::Resolution{0, 0};
+    uint32_t SobolSampler::Log2Resolution = 0;
 
     SobolSampler::SobolSampler() : mSampleIndex(0), mDimension(0), mPixel(0, 0), mSeed(0) {}
 
     SobolSampler::SobolSampler(uint32_t seed) : mSampleIndex(0), mDimension(0), mPixel(0, 0), mSeed(seed) {}
 
-    uint32_t SobolSampler::Hash(uint32_t a, uint32_t b)
+        uint32_t SobolSampler::Hash(uint32_t a, uint32_t b)
     {
         uint32_t v = a * 374761393U + b * 668265263U;
         v ^= (v >> 15);
@@ -140,51 +106,63 @@ namespace pbrt
         return v;
     }
 
-    uint32_t SobolSampler::OwenScramble(uint32_t v, uint32_t seed)
+    void SobolSampler::SetSampleExtent(const glm::ivec2 &resolution)
     {
-        // 采样时去除可见的图案, 提高采样质量
-        v ^= v * 0x3d20adea;
-        v += seed;
-        v *= (seed >> 16) | 1;
-        v ^= v * 0x05526c56;
-        v ^= v * 0x53a22864;
-        return v;
+        Resolution = resolution;
+        uint32_t max_dim = static_cast<uint32_t>(std::max(resolution.x, resolution.y));
+        uint32_t log2_scale = 0;
+        while (log2_scale < MaxSobolResolutionLog2 && (1u << log2_scale) < max_dim)
+        {
+            ++log2_scale;
+        }
+        log2_scale = std::min(log2_scale, MaxSobolResolutionLog2);
+        Log2Resolution = log2_scale;
     }
 
     float SobolSampler::SampleDimension(int dimension) const
     {
-        // 确保维度在可用矩阵范围内
-        int dim = std::min(dimension, 31);
+        int safe_dim = std::max(0, dimension);
+        uint32_t scramble_seed = ComputeScrambleSeed(safe_dim);
+        return SobolSample(mSampleIndex, safe_dim, FastOwenScrambler(scramble_seed));
+    }
 
-        // 使用Gray码和方向数矩阵生成准随机数
-        uint32_t v = 0;
-        uint32_t index = mSampleIndex;
-
-        for (int i = 0; index != 0; ++i, index >>= 1)
-        {
-            if (index & 1)
-                v ^= SobolMatrices32[dim][i];
-        }
-
-        // 应用像素相关的Owen扰动种子
-        uint32_t scramble_seed = Hash(Hash(mPixel.x, mPixel.y), mSeed + dimension);
-        v = OwenScramble(v, scramble_seed);
-
-        // 将32位整数转换为[0, 1)区间的浮点数
-        return std::min(v * 0x1p-32f, 0.99999994f);
+    uint32_t SobolSampler::ComputeScrambleSeed(int dimension) const
+    {
+        int safe_dim = std::max(0, dimension);
+        uint32_t dim_index = static_cast<uint32_t>(std::min(safe_dim, NSobolDimensions - 1));
+        uint64_t mix = static_cast<uint64_t>(dim_index) * HashMixConstant;
+        uint32_t base_seed = Hash(static_cast<uint32_t>(mPixel.x), static_cast<uint32_t>(mPixel.y));
+        return Hash(base_seed, mSeed + static_cast<uint32_t>(mix));
     }
 
     void SobolSampler::StartPixelSample(const glm::ivec2 &pixel, int sample_index)
     {
         mPixel = pixel;
-        mSampleIndex = sample_index;
         mDimension = 0;
+
+        mLog2Resolution = Log2Resolution;
+        if (mLog2Resolution == 0)
+        {
+            // Clamp negative coordinates to zero and convert from index to count.
+            uint32_t max_coord = static_cast<uint32_t>(std::max(0, std::max(pixel.x, pixel.y)));
+            if (max_coord < std::numeric_limits<uint32_t>::max())
+            {
+                ++max_coord;
+            }
+            while (mLog2Resolution < MaxSobolResolutionLog2 && (1u << mLog2Resolution) < max_coord)
+            {
+                ++mLog2Resolution;
+            }
+            mLog2Resolution = std::min(mLog2Resolution, MaxSobolResolutionLog2);
+        }
+
+        mSampleIndex = SobolIntervalToIndex(mLog2Resolution, static_cast<uint64_t>(sample_index), pixel);
     }
 
     float SobolSampler::Get1D() const
     {
         float result = SampleDimension(mDimension);
-        mDimension++;
+        ++mDimension;
         return result;
     }
 
@@ -199,5 +177,20 @@ namespace pbrt
     std::unique_ptr<Sampler> SobolSampler::Clone() const
     {
         return std::make_unique<SobolSampler>(mSeed);
+    }
+
+    int SobolSampler::GetSampleIndex() const
+    {
+        if (mSampleIndex > static_cast<uint64_t>(std::numeric_limits<int>::max()))
+        {
+            static bool warned = false;
+            if (!warned)
+            {
+                warned = true;
+                PBRT_WARN("Sobol sample index {} exceeds int range; clamping to INT_MAX", mSampleIndex);
+            }
+            return std::numeric_limits<int>::max();
+        }
+        return static_cast<int>(mSampleIndex);
     }
 }

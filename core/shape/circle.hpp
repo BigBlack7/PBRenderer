@@ -33,6 +33,6 @@ namespace pbrt
         std::optional<HitInfo> Intersect(const Ray &ray, float t_min, float t_max) const override;
         float GetArea() const override;
         std::optional<ShapeInfo> SampleShape(const RNG &rng) const override;
-        std::optional<ShapeInfo> SampleShape(const Sampler &sequence) const override;
+        // std::optional<ShapeInfo> SampleShape(const Sampler &sequence) const override;
     };
 }

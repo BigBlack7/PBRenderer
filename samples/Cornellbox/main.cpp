@@ -60,7 +60,7 @@ int main()
     scene.AddShape(teapot, new pbrt::DielectricMaterial{pbrt::RGB(255, 255, 255), 1.2f, 0.2f, 0.2f}, {-0.4f, 0.2f, -0.2f}, {0.1f, 0.1f, 0.1f}, {0.f, -20.f, 0.f});
 
     // light
-    pbrt::Image env_map("../../../assets/hdris/puresky03.exr");
+    pbrt::Image env_map("../../../assets/hdris/puresky04.exr");
     scene.AddInfiniteLight(new pbrt::EnvLight{&env_map});
 
     auto *light = new pbrt::AreaLight{circle, pbrt::RGB(255, 220, 150), false};
@@ -71,7 +71,7 @@ int main()
     pbrt::Previewer previewer(mis, 1);
     if (previewer.Preview())
     {
-        mis.Render("../../../cornellteapot02.exr", 64);
+        mis.Render("../../../cornellteapot-rng.exr", 64);
     }
 
     PBRT_INFO("PBRT Shutdown!");

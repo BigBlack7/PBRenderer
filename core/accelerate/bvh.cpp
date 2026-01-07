@@ -129,13 +129,13 @@ namespace pbrt
         return ShapeInfo{triangle_sample->__point__, triangle_sample->__normal__, triangle_sample->__pdf__ * sample_result.__prob__};
     }
 
-    std::optional<ShapeInfo> BVH::SampleShape(const Sampler &sequence) const
-    {
-        auto sample_result = mTable.Sample(sequence.Get1D());
-        const auto &triangle = mOrderedTriangles[sample_result.__idx__];
-        auto triangle_sample = triangle.SampleShape(sequence);
-        return ShapeInfo{triangle_sample->__point__, triangle_sample->__normal__, triangle_sample->__pdf__ * sample_result.__prob__};
-    }
+    // std::optional<ShapeInfo> BVH::SampleShape(const Sampler &sequence) const
+    // {
+    //     auto sample_result = mTable.Sample(sequence.Get1D());
+    //     const auto &triangle = mOrderedTriangles[sample_result.__idx__];
+    //     auto triangle_sample = triangle.SampleShape(sequence);
+    //     return ShapeInfo{triangle_sample->__point__, triangle_sample->__normal__, triangle_sample->__pdf__ * sample_result.__prob__};
+    // }
 
     /* BVH Build optimization versions:
     void BVH::RecursiveSplitByAxis(BVHTreeNode *node, BVHState &state)

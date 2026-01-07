@@ -40,9 +40,9 @@ namespace pbrt
         return ShapeInfo{__center__ + __radius__ * normal, normal, 1.f / GetArea()};
     }
 
-    std::optional<ShapeInfo> Sphere::SampleShape(const Sampler &sequence) const
-    {
-        glm::vec3 normal = UniformSampleSphere(sequence);
-        return ShapeInfo{__center__ + __radius__ * normal, normal, 1.f / GetArea()};
-    }
+    // std::optional<ShapeInfo> Sphere::SampleShape(const Sampler &sequence) const
+    // {
+    //     glm::vec3 normal = UniformSampleSphere(sequence);
+    //     return ShapeInfo{__center__ + __radius__ * normal, normal, 1.f / GetArea()};
+    // }
 }

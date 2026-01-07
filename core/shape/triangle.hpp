@@ -32,7 +32,7 @@ namespace pbrt
 
         float GetArea() const override;
         std::optional<ShapeInfo> SampleShape(const RNG &rng) const override;
-        std::optional<ShapeInfo> SampleShape(const Sampler &sequence) const override;
+        // std::optional<ShapeInfo> SampleShape(const Sampler &sequence) const override;
 
     public:
         glm::vec3 __p0__, __p1__, __p2__;

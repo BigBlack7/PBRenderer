@@ -2,32 +2,35 @@
 #include "utils/frame.hpp"
 #include "utils/rng.hpp"
 #include "sequence/sobolSampler.hpp"
+#include "sequence/rngSampler.hpp"
+#include <mutex>
 
 namespace pbrt
 {
     float PowerHeuristic(float pdf_j, float pdf_k)
     {
-        // return (pdf_j * pdf_j) / (pdf_j * pdf_j + pdf_k * pdf_k);
-        if (pdf_j <= 0.f && pdf_k <= 0.f)
-            return 0.f;
-        if (pdf_j <= 0.f)
-            return 0.f;
-        if (pdf_k <= 0.f)
-            return 1.f;
-
-        float pdf_j_sq = pdf_j * pdf_j;
-        float pdf_k_sq = pdf_k * pdf_k;
-        return pdf_j_sq / (pdf_j_sq + pdf_k_sq + 1e-8f); // 添加小常数防止除零
+        return (pdf_j * pdf_j) / (pdf_j * pdf_j + pdf_k * pdf_k);
     }
 
     glm::vec3 MISRenderer::RenderPixel(const glm::ivec3 &pixel_coord)
     {
-        // thread_local RNG rng{};
-        // rng.SetSeed(static_cast<size_t>(pixel_coord.x + pixel_coord.y * 10000 + pixel_coord.z * 10000 * 10000));
-        thread_local SobolSampler sobol;
-        sobol.StartPixelSample(glm::ivec2(pixel_coord.x, pixel_coord.y), pixel_coord.z);
-        auto ray = mCamera.GenerateRay(pixel_coord, sobol.Get2D());
+        thread_local RNG rng{};
+        rng.SetSeed(static_cast<size_t>(pixel_coord.x + pixel_coord.y * 10000 + pixel_coord.z * 10000 * 10000));
+        auto ray = mCamera.GenerateRay(pixel_coord, {rng.Uniform(), rng.Uniform()});
+        
+        /*  TODO: 低差异序列会更加地不收敛, 待解决
+            static std::once_flag sobol_extent_flag;
+            std::call_once(sobol_extent_flag, [this]()
+            { SobolSampler::SetSampleExtent({static_cast<int>(mCamera.GetFilm().GetWidth()), static_cast<int>(mCamera.GetFilm().GetHeight())}); });
+            thread_local SobolSampler sobol;
+            sobol.StartPixelSample(glm::ivec2(pixel_coord.x, pixel_coord.y), pixel_coord.z);
+            auto ray = mCamera.GenerateRay(pixel_coord, sobol.Get2D());
 
+            thread_local RNGSampler rng_sampler{};
+            rng_sampler.StartPixelSample(glm::ivec2(pixel_coord.x, pixel_coord.y), pixel_coord.z);
+            auto ray = mCamera.GenerateRay(pixel_coord, rng_sampler.Get2D());
+        */
+        
         glm::vec3 beta = {1.f, 1.f, 1.f};
         glm::vec3 radiance = {0.f, 0.f, 0.f};
         bool last_is_delta = true;
@@ -62,7 +65,7 @@ namespace pbrt
                 q = glm::min(q, 0.9f);
                 if (q < 1.f)
                 {
-                    if (sobol.Get1D() > q)
+                    if (rng.Uniform() > q)
                     {
                         break;
                     }
@@ -86,10 +89,10 @@ namespace pbrt
                     if (!last_is_delta)
                     {
                         anyNonSpecularBounces = true;
-                        auto light_sample_info = light_sampler.SampleLight(sobol.Get1D());
+                        auto light_sample_info = light_sampler.SampleLight(rng.Uniform());
                         if (light_sample_info.has_value())
                         {
-                            auto light_info = light_sample_info->__light__->SampleLight(hit_info->__hitPoint__, mScene.GetRadius(), sobol, MISC);
+                            auto light_info = light_sample_info->__light__->SampleLight(hit_info->__hitPoint__, mScene.GetRadius(), rng, MISC);
                             if (light_info.has_value() && (!mScene.Intersect({hit_info->__hitPoint__, light_info->__lightPoint__ - hit_info->__hitPoint__}, 1e-5, 1.f - 1e-5)))
                             {
                                 glm::vec3 light_dir_local = frame.LocalFromWorld(light_info->__direction__);
@@ -110,7 +113,7 @@ namespace pbrt
                     {
                         hit_info->__material__->Regularize();
                     }
-                    auto bsdf_info = hit_info->__material__->SampleBSDF(hit_info->__hitPoint__, view_dir, sobol);
+                    auto bsdf_info = hit_info->__material__->SampleBSDF(hit_info->__hitPoint__, view_dir, rng);
 
                     if (!bsdf_info.has_value())
                     {
