@@ -55,19 +55,20 @@ namespace pbrt
         return ShapeInfo{u * __p0__ + v * __p1__ + (1.f - u - v) * __p2__, u * __n0__ + v * __n1__ + (1.f - u - v) * __n2__, 1.f / GetArea()};
     }
 
-    // std::optional<ShapeInfo> Triangle::SampleShape(const Sampler &sequence) const
-    // {
-    //     float u = sequence.Get1D(), v = sequence.Get1D();
-    //     if (u > v)
-    //     {
-    //         v *= 0.5f;
-    //         u -= v;
-    //     }
-    //     else
-    //     {
-    //         u *= 0.5f;
-    //         v -= u;
-    //     }
-    //     return ShapeInfo{u * __p0__ + v * __p1__ + (1.f - u - v) * __p2__, u * __n0__ + v * __n1__ + (1.f - u - v) * __n2__, 1.f / GetArea()};
-    // }
+    // 参数化采样：使用2D均匀随机数作为输入，适用于低差异序列
+    std::optional<ShapeInfo> Triangle::SampleShape(const glm::vec2 &uv) const
+    {
+        float u = uv.x, v = uv.y;
+        if (u > v)
+        {
+            v *= 0.5f;
+            u -= v;
+        }
+        else
+        {
+            u *= 0.5f;
+            v -= u;
+        }
+        return ShapeInfo{u * __p0__ + v * __p1__ + (1.f - u - v) * __p2__, u * __n0__ + v * __n1__ + (1.f - u - v) * __n2__, 1.f / GetArea()};
+    }
 }

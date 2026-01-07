@@ -40,9 +40,10 @@ namespace pbrt
         return ShapeInfo{__center__ + __radius__ * normal, normal, 1.f / GetArea()};
     }
 
-    // std::optional<ShapeInfo> Sphere::SampleShape(const Sampler &sequence) const
-    // {
-    //     glm::vec3 normal = UniformSampleSphere(sequence);
-    //     return ShapeInfo{__center__ + __radius__ * normal, normal, 1.f / GetArea()};
-    // }
+    // 参数化采样：使用2D均匀随机数作为输入，适用于低差异序列
+    std::optional<ShapeInfo> Sphere::SampleShape(const glm::vec2 &u) const
+    {
+        glm::vec3 normal = UniformSampleSphere(u);
+        return ShapeInfo{__center__ + __radius__ * normal, normal, 1.f / GetArea()};
+    }
 }

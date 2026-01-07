@@ -25,7 +25,8 @@ namespace pbrt
 
         float Phi(float scene_radius) const override { return mPrecomputePhi * scene_radius * scene_radius; }
         std::optional<LightInfo> SampleLight(const glm::vec3 &surface_point, float scene_radius, const RNG &rng, bool MISC) const override;
-        // std::optional<LightInfo> SampleLight(const glm::vec3 &surface_point, float scene_radius, const Sampler &sequence, bool MISC) const override;
+        // 参数化采样接口：使用u_select选择网格，u_surface在网格内采样
+        std::optional<LightInfo> SampleLight(const glm::vec3 &surface_point, float scene_radius, float u_select, const glm::vec2 &u_surface, bool MISC) const override;
 
         glm::vec3 GetRadiance(const glm::vec3 &surface_point, const glm::vec3 &light_point, const glm::vec3 &normal) const override;
         float PDF(const glm::vec3 &surface_point, const glm::vec3 &light_point, const glm::vec3 &normal, bool MISC) const override;
