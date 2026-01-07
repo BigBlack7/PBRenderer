@@ -126,16 +126,25 @@ namespace pbrt
         auto sample_result = mTable.Sample(rng.Uniform());
         const auto &triangle = mOrderedTriangles[sample_result.__idx__];
         auto triangle_sample = triangle.SampleShape(rng);
+        if (!triangle_sample.has_value())
+        {
+            return {};
+        }
         return ShapeInfo{triangle_sample->__point__, triangle_sample->__normal__, triangle_sample->__pdf__ * sample_result.__prob__};
     }
 
-    // std::optional<ShapeInfo> BVH::SampleShape(const Sampler &sequence) const
-    // {
-    //     auto sample_result = mTable.Sample(sequence.Get1D());
-    //     const auto &triangle = mOrderedTriangles[sample_result.__idx__];
-    //     auto triangle_sample = triangle.SampleShape(sequence);
-    //     return ShapeInfo{triangle_sample->__point__, triangle_sample->__normal__, triangle_sample->__pdf__ * sample_result.__prob__};
-    // }
+    // 参数化采样：使用1D选择三角形 + 2D在三角形表面采样
+    std::optional<ShapeInfo> BVH::SampleShape(float u_select, const glm::vec2 &u_surface) const
+    {
+        auto sample_result = mTable.Sample(u_select);
+        const auto &triangle = mOrderedTriangles[sample_result.__idx__];
+        auto triangle_sample = triangle.SampleShape(u_surface);
+        if (!triangle_sample.has_value())
+        {
+            return {};
+        }
+        return ShapeInfo{triangle_sample->__point__, triangle_sample->__normal__, triangle_sample->__pdf__ * sample_result.__prob__};
+    }
 
     /* BVH Build optimization versions:
     void BVH::RecursiveSplitByAxis(BVHTreeNode *node, BVHState &state)

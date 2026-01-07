@@ -548,12 +548,19 @@ inline glm::vec3 UniformSampleHemisphere(const RNG &rng);
 ### 2. 形状采样接口（shape.hpp）
 
 ```cpp
-// 参数化版本 - 新增
+// 参数化版本（简单形状，如Triangle, Sphere, Circle）- 新增
 virtual std::optional<ShapeInfo> SampleShape(const glm::vec2 &u) const;
+
+// 参数化版本（复合形状，如BVH, Model）- 新增
+// 使用1D选择子形状 + 2D在子形状表面采样
+virtual std::optional<ShapeInfo> SampleShape(float u_select, const glm::vec2 &u_surface) const;
 
 // RNG版本 - 保留
 virtual std::optional<ShapeInfo> SampleShape(const RNG &rng) const;
 ```
+
+**注意**：对于`Model`和`BVH`等复合形状，需要使用`SampleShape(float u_select, const glm::vec2 &u_surface)`接口，
+其中`u_select`用于通过AliasTable选择三角形，`u_surface`用于在选中的三角形上采样点。
 
 ### 3. 光源采样接口（light.hpp）
 

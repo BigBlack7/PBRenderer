@@ -25,6 +25,7 @@ namespace pbrt
         Bounds GetBounds() const override { return mBVH.GetBounds(); }
         float GetArea() const override { return mBVH.GetArea(); }
         std::optional<ShapeInfo> SampleShape(const RNG &rng) const override { return mBVH.SampleShape(rng); }
-        // std::optional<ShapeInfo> SampleShape(const Sampler &sequence) const override { return mBVH.SampleShape(sequence); }
+        // 参数化采样接口：用于复合形状，需要1D选择三角形 + 2D表面采样
+        std::optional<ShapeInfo> SampleShape(float u_select, const glm::vec2 &u_surface) const override { return mBVH.SampleShape(u_select, u_surface); }
     };
 }

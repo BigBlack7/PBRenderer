@@ -88,7 +88,8 @@ namespace pbrt
         Bounds GetBounds() const override { return mNodes[0].__bounds__; }
         float GetArea() const override { return mArea; }
         std::optional<ShapeInfo> SampleShape(const RNG &rng) const override;
-        // std::optional<ShapeInfo> SampleShape(const Sampler &sequence) const override;
+        // 参数化采样接口：用于复合形状，需要1D选择三角形 + 2D表面采样
+        std::optional<ShapeInfo> SampleShape(float u_select, const glm::vec2 &u_surface) const override;
 
     private:
         void RecursiveSplit(BVHTreeNode *node, BVHState &state);
