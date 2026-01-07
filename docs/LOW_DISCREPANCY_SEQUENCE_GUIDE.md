@@ -330,6 +330,253 @@ std::optional<BSDFInfo> SampleBSDF(const glm::vec3 &hit_point, const glm::vec3 &
 
 ## 参考资料
 
-- PBRT-v4: https://github.com/mmp/pbrt-v4
-- "Efficient Rendering of Local Subsurface Scattering" - Matt Pharr, 论文
-- "Physically Based Rendering: From Theory to Implementation" - 第4版，第8章
+- **PBRT-v4**: Matt Pharr, Wenzel Jakob, Greg Humphreys. "Physically Based Rendering: From Theory to Implementation" (4th ed.), MIT Press, 2023. https://github.com/mmp/pbrt-v4
+- **Sobol序列**: I.M. Sobol. "On the distribution of points in a cube and the approximate evaluation of integrals", USSR Computational Mathematics and Mathematical Physics, 1967.
+- **Owen扰动**: Art Owen. "Scrambled net variance for integrals of smooth functions", Annals of Statistics, 1997.
+
+---
+
+## 附录A：MISRenderer的正确Sobol集成示例
+
+以下是如何正确地在MISRenderer中集成Sobol采样器的完整示例：
+
+```cpp
+#include "MISRenderer.hpp"
+#include "utils/frame.hpp"
+#include "utils/rng.hpp"
+#include "sequence/sobolSampler.hpp"
+#include <mutex>
+
+namespace pbrt
+{
+    float PowerHeuristic(float pdf_j, float pdf_k)
+    {
+        return (pdf_j * pdf_j) / (pdf_j * pdf_j + pdf_k * pdf_k);
+    }
+
+    glm::vec3 MISRenderer::RenderPixel(const glm::ivec3 &pixel_coord)
+    {
+        // ===== 采样器初始化 =====
+        // 1. 初始化Sobol采样器（用于关键采样点）
+        static std::once_flag sobol_extent_flag;
+        std::call_once(sobol_extent_flag, [this]() {
+            SobolSampler::SetSampleExtent({
+                static_cast<int>(mCamera.GetFilm().GetWidth()),
+                static_cast<int>(mCamera.GetFilm().GetHeight())
+            });
+        });
+        
+        thread_local SobolSampler sobol;
+        sobol.StartPixelSample(glm::ivec2(pixel_coord.x, pixel_coord.y), pixel_coord.z);
+        
+        // 2. 初始化独立RNG（用于决策采样）
+        // 使用更健壮的哈希函数避免溢出问题
+        thread_local RNG rng{};
+        auto hashPixel = [](int x, int y, int z) -> size_t {
+            // FNV-1a hash variant
+            size_t hash = 14695981039346656037ULL;
+            hash ^= static_cast<size_t>(x);
+            hash *= 1099511628211ULL;
+            hash ^= static_cast<size_t>(y);
+            hash *= 1099511628211ULL;
+            hash ^= static_cast<size_t>(z);
+            hash *= 1099511628211ULL;
+            return hash;
+        };
+        rng.SetSeed(hashPixel(pixel_coord.x, pixel_coord.y, pixel_coord.z));
+        
+        // ===== 相机采样（使用Sobol - 维度0-1）=====
+        auto ray = mCamera.GenerateRay(pixel_coord, sobol.Get2D());
+        
+        // 路径追踪变量
+        glm::vec3 beta = {1.f, 1.f, 1.f};
+        glm::vec3 radiance = {0.f, 0.f, 0.f};
+        bool last_is_delta = true;
+        float last_bsdf_pdf = 0.f;
+        float eta_scale = 1.f;
+        bool MISC = true;
+        const LightSampler &light_sampler = mScene.GetLightSampler(MISC);
+        
+        // 路径追踪主循环
+        while (true)
+        {
+            auto hit_info = mScene.Intersect(ray);
+            if (hit_info.has_value())
+            {
+                // ... 命中区域光源处理 ...
+                
+                // ===== 俄罗斯轮盘赌（使用独立RNG，不使用Sobol）=====
+                glm::vec3 beta_q = beta * eta_scale;
+                float q = glm::max(beta_q.r, glm::max(beta_q.g, beta_q.b));
+                q = glm::min(q, 0.9f);
+                if (q < 1.f)
+                {
+                    // 关键：使用独立RNG，不使用Sobol
+                    if (rng.Uniform() > q)
+                    {
+                        break;
+                    }
+                    beta /= q;
+                }
+                
+                Frame frame(hit_info->__normal__);
+                glm::vec3 light_dir;
+                
+                if (hit_info->__material__)
+                {
+                    glm::vec3 view_dir = frame.LocalFromWorld(-ray.__direction__);
+                    
+                    if (view_dir.y == 0)
+                    {
+                        ray.__origin__ = hit_info->__hitPoint__;
+                        continue;
+                    }
+                    
+                    last_is_delta = hit_info->__material__->IsDeltaDistribution();
+                    
+                    // ===== NEE光源采样（使用Sobol）=====
+                    if (!last_is_delta)
+                    {
+                        // 光源选择（Sobol 1D）
+                        auto light_sample_info = light_sampler.SampleLight(sobol.Get1D());
+                        if (light_sample_info.has_value())
+                        {
+                            // 光源表面采样（Sobol 2D + 1D用于选择）
+                            // 使用新的参数化接口
+                            auto light_info = light_sample_info->__light__->SampleLight(
+                                hit_info->__hitPoint__, 
+                                mScene.GetRadius(), 
+                                sobol.Get1D(),      // u_select
+                                sobol.Get2D(),      // u_surface
+                                MISC
+                            );
+                            
+                            if (light_info.has_value() && 
+                                (!mScene.Intersect({hit_info->__hitPoint__, 
+                                    light_info->__lightPoint__ - hit_info->__hitPoint__}, 1e-5, 1.f - 1e-5)))
+                            {
+                                glm::vec3 light_dir_local = frame.LocalFromWorld(light_info->__direction__);
+                                float bsdf_pdf = hit_info->__material__->PDF(hit_info->__hitPoint__, light_dir_local, view_dir);
+                                float light_weight = PowerHeuristic(light_info->__pdf__ * light_sample_info->__prob__, bsdf_pdf);
+                                radiance += light_weight * beta * 
+                                    hit_info->__material__->BSDF(hit_info->__hitPoint__, light_dir_local, view_dir) * 
+                                    glm::abs(light_dir_local.y) * light_info->__Le__ / 
+                                    (light_info->__pdf__ * light_sample_info->__prob__);
+                            }
+                        }
+                    }
+                    
+                    // ===== BSDF采样（使用RNG）=====
+                    // 注意：这里使用RNG版本的SampleBSDF，原因如下：
+                    // 1. DielectricMaterial内部的反射/透射决策需要独立随机数
+                    // 2. 路径深度不固定，使用Sobol会导致维度消耗不一致
+                    // 
+                    // 如果要使用Sobol进行BSDF采样，需要：
+                    // 1. 为不含决策的材质（如DiffuseMaterial）单独实现
+                    // 2. 或者在材质内部分离决策采样和方向采样
+                    //
+                    // 对于简单的Diffuse材质，可以这样使用：
+                    // auto bsdf_info = hit_info->__material__->SampleBSDF(hit_point, view_dir, sobol.Get2D());
+                    auto bsdf_info = hit_info->__material__->SampleBSDF(hit_info->__hitPoint__, view_dir, rng);
+                    
+                    if (!bsdf_info.has_value())
+                    {
+                        break;
+                    }
+                    
+                    last_bsdf_pdf = bsdf_info->__pdf__;
+                    eta_scale *= bsdf_info->__etaScale__;
+                    beta *= bsdf_info->__bsdf__ * glm::abs(bsdf_info->__lightDirection__.y) / bsdf_info->__pdf__;
+                    light_dir = bsdf_info->__lightDirection__;
+                }
+                else
+                {
+                    break;
+                }
+                
+                ray.__origin__ = hit_info->__hitPoint__;
+                ray.__direction__ = frame.WorldFromLocal(light_dir);
+            }
+            else
+            {
+                // ... 处理环境光/无限光源 ...
+                break;
+            }
+        }
+        
+        return radiance;
+    }
+}
+```
+
+### 关键点说明
+
+1. **相机采样（维度0-1）**：使用`sobol.Get2D()`，这是最重要的低差异采样点
+2. **俄罗斯轮盘赌**：始终使用`rng.Uniform()`，不使用Sobol
+3. **光源选择**：使用`sobol.Get1D()`
+4. **光源表面采样**：使用新的参数化接口`SampleLight(u_select, u_surface)`
+5. **BSDF采样**：保持使用RNG版本，因为某些材质（如DielectricMaterial）内部需要做二值决策
+
+### 维度消耗模式
+
+| 采样点 | 维度消耗 | 推荐来源 |
+|--------|----------|----------|
+| 相机采样 | 2D (维度0-1) | Sobol |
+| 光源选择 | 1D (维度2) | Sobol |
+| 光源表面 | 3D (维度3-5) | Sobol |
+| BSDF采样 | 不固定 | RNG |
+| 俄罗斯轮盘赌 | 1D | RNG |
+
+---
+
+## 附录B：已实现的接口改进
+
+本次PR中已实现以下接口改进：
+
+### 1. 参数化球面采样（spherical.hpp）
+
+```cpp
+// 参数化版本（固定2维度消耗）- 新增
+inline glm::vec3 UniformSampleSphere(const glm::vec2 &u);
+inline glm::vec3 UniformSampleHemisphere(const glm::vec2 &u);
+
+// 拒绝采样版本（保留用于RNG）
+inline glm::vec3 UniformSampleSphere(const RNG &rng);
+inline glm::vec3 UniformSampleHemisphere(const RNG &rng);
+```
+
+### 2. 形状采样接口（shape.hpp）
+
+```cpp
+// 参数化版本 - 新增
+virtual std::optional<ShapeInfo> SampleShape(const glm::vec2 &u) const;
+
+// RNG版本 - 保留
+virtual std::optional<ShapeInfo> SampleShape(const RNG &rng) const;
+```
+
+### 3. 光源采样接口（light.hpp）
+
+```cpp
+// 参数化版本 - 新增
+virtual std::optional<LightInfo> SampleLight(
+    const glm::vec3 &surface_point, 
+    float scene_radius, 
+    float u_select,           // 用于离散选择
+    const glm::vec2 &u_surface, // 用于表面采样
+    bool MISC
+) const;
+
+// RNG版本 - 保留
+virtual std::optional<LightInfo> SampleLight(
+    const glm::vec3 &surface_point, 
+    float scene_radius, 
+    const RNG &rng, 
+    bool MISC
+) const;
+```
+
+这些接口改进使得用户可以：
+1. 明确控制维度消耗
+2. 在渲染器层面选择采样策略
+3. 支持预计算采样点进行优化
