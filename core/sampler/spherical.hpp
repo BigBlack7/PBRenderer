@@ -27,6 +27,28 @@ namespace pbrt
         return direcition.y * INV_PI;
     }
 
+    // 参数化的半球均匀采样（固定消耗2个维度）
+    // 适用于低差异序列
+    inline glm::vec3 UniformSampleHemisphere(const glm::vec2 &u)
+    {
+        float z = u.x;
+        float r = glm::sqrt(glm::max(0.f, 1.f - z * z));
+        float phi = 2.f * PI * u.y;
+        return glm::vec3(r * glm::cos(phi), z, r * glm::sin(phi));
+    }
+
+    // 参数化的球面均匀采样（固定消耗2个维度）
+    // 适用于低差异序列
+    inline glm::vec3 UniformSampleSphere(const glm::vec2 &u)
+    {
+        float z = 1.f - 2.f * u.x;
+        float r = glm::sqrt(glm::max(0.f, 1.f - z * z));
+        float phi = 2.f * PI * u.y;
+        return glm::vec3(r * glm::cos(phi), z, r * glm::sin(phi));
+    }
+
+    // 拒绝采样版本的半球均匀采样
+    // 注意：此版本消耗不确定数量的随机数，不适用于低差异序列
     inline glm::vec3 UniformSampleHemisphere(const RNG &rng)
     {
         glm::vec3 res;
@@ -42,6 +64,8 @@ namespace pbrt
         return glm::normalize(res);
     }
 
+    // 拒绝采样版本的球面均匀采样
+    // 注意：此版本消耗不确定数量的随机数，不适用于低差异序列
     inline glm::vec3 UniformSampleSphere(const RNG &rng)
     {
         glm::vec3 res;
@@ -52,15 +76,4 @@ namespace pbrt
         } while (glm::length(res) > 1.f);
         return glm::normalize(res);
     }
-
-    // inline glm::vec3 UniformSampleSphere(const Sampler &sequence)
-    // {
-    //     glm::vec3 res;
-    //     do
-    //     {
-    //         res = {sequence.Get1D(), sequence.Get1D(), sequence.Get1D()};
-    //         res = res * 2.f - 1.f;
-    //     } while (glm::length(res) > 1.f);
-    //     return glm::normalize(res);
-    // }
 }

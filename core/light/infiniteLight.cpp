@@ -19,16 +19,17 @@ namespace pbrt
         return LightInfo{surface_point + 2.f * scene_radius * light_direction, light_direction, mLe, 1.f / (4.f * PI)};
     }
 
-    // std::optional<LightInfo> InfiniteLight::SampleLight(const glm::vec3 &surface_point, float scene_radius, const Sampler &sequence, bool MISC) const
-    // {
-    //     if (MISC)
-    //     {
-    //         return {};
-    //     }
+    // 参数化采样接口：使用2D样本进行球面均匀采样
+    std::optional<LightInfo> InfiniteLight::SampleLight(const glm::vec3 &surface_point, float scene_radius, float u_select, const glm::vec2 &u_surface, bool MISC) const
+    {
+        if (MISC)
+        {
+            return {};
+        }
 
-    //     glm::vec3 light_direction = UniformSampleSphere(sequence);
-    //     return LightInfo{surface_point + 2.f * scene_radius * light_direction, light_direction, mLe, 1.f / (4.f * PI)};
-    // }
+        glm::vec3 light_direction = UniformSampleSphere(u_surface);
+        return LightInfo{surface_point + 2.f * scene_radius * light_direction, light_direction, mLe, 1.f / (4.f * PI)};
+    }
 
     float InfiniteLight::PDF(const glm::vec3 &surface_point, const glm::vec3 &light_point, const glm::vec3 &normal, bool MISC) const
     {

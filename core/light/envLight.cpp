@@ -118,26 +118,27 @@ namespace pbrt
             res.__prob__ * mImage->GetHeight() * mImage->GetWidth() / (2 * PI * PI * glm::sqrt(1 - light_direction.y * light_direction.y) * w * h)};
     }
 
-    // std::optional<LightInfo> EnvLight::SampleLight(const glm::vec3 &surface_point, float scene_radius, const Sampler &sequence, bool MISC) const
-    // {
-    //     auto res = (MISC ? mAliasTableMISC : mAliasTable).Sample(sequence.Get1D());
-    //     size_t grid_x = res.__idx__ % mGridCount.x;
-    //     size_t grid_y = res.__idx__ / mGridCount.x;
-    //     float w = glm::min<float>(mGridSize, mImage->GetWidth() - grid_x * mGridSize);
-    //     float h = glm::min<float>(mGridSize, mImage->GetHeight() - grid_y * mGridSize);
+    // 参数化采样接口：使用u_select选择网格，u_surface在网格内采样
+    std::optional<LightInfo> EnvLight::SampleLight(const glm::vec3 &surface_point, float scene_radius, float u_select, const glm::vec2 &u_surface, bool MISC) const
+    {
+        auto res = (MISC ? mAliasTableMISC : mAliasTable).Sample(u_select);
+        size_t grid_x = res.__idx__ % mGridCount.x;
+        size_t grid_y = res.__idx__ / mGridCount.x;
+        float w = glm::min<float>(mGridSize, mImage->GetWidth() - grid_x * mGridSize);
+        float h = glm::min<float>(mGridSize, mImage->GetHeight() - grid_y * mGridSize);
 
-    //     glm::vec2 image_point{grid_x * mGridSize + w * sequence.Get1D(), grid_y * mGridSize + h * sequence.Get1D()};
-    //     glm::vec3 light_direction = DirectionFromImagePoint(image_point);
-    //     if (glm::abs(light_direction.y) == 1)
-    //     {
-    //         return {};
-    //     }
-    //     return LightInfo{
-    //         surface_point + 2 * scene_radius * light_direction,
-    //         light_direction,
-    //         mImage->GetPixel(image_point),
-    //         res.__prob__ * mImage->GetHeight() * mImage->GetWidth() / (2 * PI * PI * glm::sqrt(1 - light_direction.y * light_direction.y) * w * h)};
-    // }
+        glm::vec2 image_point{grid_x * mGridSize + w * u_surface.x, grid_y * mGridSize + h * u_surface.y};
+        glm::vec3 light_direction = DirectionFromImagePoint(image_point);
+        if (glm::abs(light_direction.y) == 1)
+        {
+            return {};
+        }
+        return LightInfo{
+            surface_point + 2 * scene_radius * light_direction,
+            light_direction,
+            mImage->GetPixel(image_point),
+            res.__prob__ * mImage->GetHeight() * mImage->GetWidth() / (2 * PI * PI * glm::sqrt(1 - light_direction.y * light_direction.y) * w * h)};
+    }
 
     glm::vec3 EnvLight::GetRadiance(const glm::vec3 &surface_point, const glm::vec3 &light_point, const glm::vec3 &normal) const
     {
