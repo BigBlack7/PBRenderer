@@ -30,10 +30,11 @@ namespace pbrt
         return LightInfo{shape_sample->__point__, light_direction, mLe, shape_sample->__pdf__ / det_J};
     }
 
-    // 参数化采样接口：使用2D样本在形状表面采样
+    // 参数化采样接口：使用1D选择 + 2D表面采样
+    // 对于复合形状（如Model/BVH），u_select用于选择子形状，u_surface用于在子形状表面采样
     std::optional<LightInfo> AreaLight::SampleLight(const glm::vec3 &surface_point, float scene_radius, float u_select, const glm::vec2 &u_surface, bool MISC) const
     {
-        auto shape_sample = mShape.SampleShape(u_surface);
+        auto shape_sample = mShape.SampleShape(u_select, u_surface);
         if (!shape_sample.has_value())
         {
             return {};
