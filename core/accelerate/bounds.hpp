@@ -6,8 +6,8 @@ namespace pbrt
     struct Bounds
     {
     public:
-        glm::vec3 __bMin__;
-        glm::vec3 __bMax__;
+        glm::vec3 __bMin__; // 最小点 (x_min, y_min, z_min)
+        glm::vec3 __bMax__; // 最大点 (x_max, y_max, z_max)
 
     public:
         Bounds() : __bMin__(std::numeric_limits<float>::max()), __bMax__(-std::numeric_limits<float>::max()) {}

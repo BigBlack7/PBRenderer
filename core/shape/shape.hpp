@@ -1,7 +1,6 @@
 ﻿#pragma once
 #include "light/ray.hpp"
 #include "accelerate/bounds.hpp"
-#include "sequence/sampler.hpp"
 #include <optional>
 
 namespace pbrt
@@ -20,7 +19,6 @@ namespace pbrt
         virtual Bounds GetBounds() const { return {}; }
         virtual float GetArea() const { return -1.f; }
         virtual std::optional<ShapeInfo> SampleShape(const RNG &rng) const { return {}; }
-        // virtual std::optional<ShapeInfo> SampleShape(const Sampler &sequence) const { return {}; }
         virtual float PDF(const glm::vec3 &point, const glm::vec3 &normal) const { return 1.f / GetArea(); }
     };
 }

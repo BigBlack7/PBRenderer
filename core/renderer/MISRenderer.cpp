@@ -1,7 +1,6 @@
 ﻿#include "MISRenderer.hpp"
 #include "utils/frame.hpp"
 #include "utils/rng.hpp"
-#include "sequence/sobolSampler.hpp"
 #include "sequence/rngSampler.hpp"
 #include <mutex>
 
@@ -17,20 +16,7 @@ namespace pbrt
         thread_local RNG rng{};
         rng.SetSeed(static_cast<size_t>(pixel_coord.x + pixel_coord.y * 10000 + pixel_coord.z * 10000 * 10000));
         auto ray = mCamera.GenerateRay(pixel_coord, {rng.Uniform(), rng.Uniform()});
-        
-        /*  TODO: 低差异序列会更加地不收敛, 待解决
-            static std::once_flag sobol_extent_flag;
-            std::call_once(sobol_extent_flag, [this]()
-            { SobolSampler::SetSampleExtent({static_cast<int>(mCamera.GetFilm().GetWidth()), static_cast<int>(mCamera.GetFilm().GetHeight())}); });
-            thread_local SobolSampler sobol;
-            sobol.StartPixelSample(glm::ivec2(pixel_coord.x, pixel_coord.y), pixel_coord.z);
-            auto ray = mCamera.GenerateRay(pixel_coord, sobol.Get2D());
 
-            thread_local RNGSampler rng_sampler{};
-            rng_sampler.StartPixelSample(glm::ivec2(pixel_coord.x, pixel_coord.y), pixel_coord.z);
-            auto ray = mCamera.GenerateRay(pixel_coord, rng_sampler.Get2D());
-        */
-        
         glm::vec3 beta = {1.f, 1.f, 1.f};
         glm::vec3 radiance = {0.f, 0.f, 0.f};
         bool last_is_delta = true;

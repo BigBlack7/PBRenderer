@@ -16,7 +16,6 @@ namespace pbrt
     public:
         ConductorMaterial(const glm::vec3 &ior, const glm::vec3 &k, float alpha_x, float alpha_z) : mIOR(ior), mK(k), mMicrofacet(alpha_x, alpha_z) {}
         std::optional<BSDFInfo> SampleBSDF(const glm::vec3 &hit_point, const glm::vec3 &view_dir, const RNG &rng) const override;
-        std::optional<BSDFInfo> SampleBSDF(const glm::vec3 &hit_point, const glm::vec3 &view_dir, const Sampler &sequence) const override;
         glm::vec3 BSDF(const glm::vec3 &hit_point, const glm::vec3 &light_dir, const glm::vec3 &view_dir) const override;
         float PDF(const glm::vec3 &hit_point, const glm::vec3 &light_dir, const glm::vec3 &view_dir) const override;
         bool IsDeltaDistribution() const override { return mMicrofacet.IsDeltaDistribution(); }

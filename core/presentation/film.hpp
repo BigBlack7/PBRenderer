@@ -8,10 +8,8 @@ namespace pbrt
     struct Pixel
     {
     public:
-        glm::vec3 __color__{0.f, 0.f, 0.f};
+        glm::dvec3 __color__{0.f, 0.f, 0.f};
         int __sampleCount__{0};
-
-    public:
     };
 
     class Film

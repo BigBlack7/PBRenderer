@@ -6,6 +6,10 @@ namespace pbrt
     struct Triangle : public Shape
     {
     public:
+        glm::vec3 __p0__, __p1__, __p2__;
+        glm::vec3 __n0__, __n1__, __n2__;
+
+    public:
         Triangle(const glm::vec3 &p0, const glm::vec3 &p1, const glm::vec3 &p2,
                  const glm::vec3 &n0, const glm::vec3 &n1, const glm::vec3 &n2)
             : __p0__(p0), __p1__(p1), __p2__(p2), __n0__(n0), __n1__(n1), __n2__(n2) {}
@@ -32,10 +36,5 @@ namespace pbrt
 
         float GetArea() const override;
         std::optional<ShapeInfo> SampleShape(const RNG &rng) const override;
-        // std::optional<ShapeInfo> SampleShape(const Sampler &sequence) const override;
-
-    public:
-        glm::vec3 __p0__, __p1__, __p2__;
-        glm::vec3 __n0__, __n1__, __n2__;
     };
 }

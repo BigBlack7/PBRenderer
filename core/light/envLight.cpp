@@ -42,13 +42,7 @@ namespace pbrt
     glm::vec3 EnvLight::DirectionFromImagePoint(const glm::vec2 &image_point) const
     {
         float theta = glm::radians(180 * image_point.y / mImage->GetHeight());
-        float phi = glm::radians(360 * image_point.x / mImage->GetWidth());
-
-        phi -= glm::radians(mStartPhi);
-        if (phi > 360)
-        {
-            phi -= 360;
-        }
+        float phi = glm::radians(360 * image_point.x / mImage->GetWidth() - mStartPhi);
 
         float sin_theta = glm::sin(theta);
         float cos_theta = glm::cos(theta);
@@ -68,9 +62,9 @@ namespace pbrt
         mPrecomputePhi = 0;
         mGridCount = GirdIdxFromImagePoint(mImage->GetResolution()) + 1;
         std::vector<float> grids_phi(mGridCount.x * mGridCount.y);
-        for (size_t x = 0; x < mImage->GetWidth(); x++)
+        for (size_t y = 0; y < mImage->GetHeight(); y++)
         {
-            for (size_t y = 0; y < mImage->GetHeight(); y++)
+            for (size_t x = 0; x < mImage->GetWidth(); x++)
             {
                 glm::vec3 radiance = mImage->GetPixel(x, y);
                 float pixel_phi = glm::max(radiance.r, glm::max(radiance.g, radiance.b)) * (glm::cos(y * PI / mImage->GetHeight()) - glm::cos((y + 1) * PI / mImage->GetHeight()));
@@ -83,10 +77,12 @@ namespace pbrt
         float average_phi = mPrecomputePhi / (mGridCount.x * mGridCount.y);
         mPrecomputePhi *= 2 * PI * PI / mImage->GetWidth();
         mAliasTable.Build(grids_phi);
+        mCompensated = true;
         for (float &grid_phi : grids_phi)
         {
             if (grid_phi > average_phi)
             {
+                mCompensated = false;
                 grid_phi -= average_phi;
             }
             else
@@ -94,12 +90,15 @@ namespace pbrt
                 grid_phi = 0;
             }
         }
-        mAliasTableMISC.Build(grids_phi);
+        if (!mCompensated)
+        {
+            mAliasTableMISC.Build(grids_phi);
+        }
     }
 
     std::optional<LightInfo> EnvLight::SampleLight(const glm::vec3 &surface_point, float scene_radius, const RNG &rng, bool MISC) const
     {
-        auto res = (MISC ? mAliasTableMISC : mAliasTable).Sample(rng.Uniform());
+        auto res = ((MISC && (!mCompensated)) ? mAliasTableMISC : mAliasTable).Sample(rng.Uniform());
         size_t grid_x = res.__idx__ % mGridCount.x;
         size_t grid_y = res.__idx__ / mGridCount.x;
         float w = glm::min<float>(mGridSize, mImage->GetWidth() - grid_x * mGridSize);
@@ -117,27 +116,6 @@ namespace pbrt
             mImage->GetPixel(image_point),
             res.__prob__ * mImage->GetHeight() * mImage->GetWidth() / (2 * PI * PI * glm::sqrt(1 - light_direction.y * light_direction.y) * w * h)};
     }
-
-    // std::optional<LightInfo> EnvLight::SampleLight(const glm::vec3 &surface_point, float scene_radius, const Sampler &sequence, bool MISC) const
-    // {
-    //     auto res = (MISC ? mAliasTableMISC : mAliasTable).Sample(sequence.Get1D());
-    //     size_t grid_x = res.__idx__ % mGridCount.x;
-    //     size_t grid_y = res.__idx__ / mGridCount.x;
-    //     float w = glm::min<float>(mGridSize, mImage->GetWidth() - grid_x * mGridSize);
-    //     float h = glm::min<float>(mGridSize, mImage->GetHeight() - grid_y * mGridSize);
-
-    //     glm::vec2 image_point{grid_x * mGridSize + w * sequence.Get1D(), grid_y * mGridSize + h * sequence.Get1D()};
-    //     glm::vec3 light_direction = DirectionFromImagePoint(image_point);
-    //     if (glm::abs(light_direction.y) == 1)
-    //     {
-    //         return {};
-    //     }
-    //     return LightInfo{
-    //         surface_point + 2 * scene_radius * light_direction,
-    //         light_direction,
-    //         mImage->GetPixel(image_point),
-    //         res.__prob__ * mImage->GetHeight() * mImage->GetWidth() / (2 * PI * PI * glm::sqrt(1 - light_direction.y * light_direction.y) * w * h)};
-    // }
 
     glm::vec3 EnvLight::GetRadiance(const glm::vec3 &surface_point, const glm::vec3 &light_point, const glm::vec3 &normal) const
     {
@@ -160,7 +138,7 @@ namespace pbrt
         glm::ivec2 grid_idx = GirdIdxFromImagePoint(image_point);
         float w = glm::min<float>(mGridSize, mImage->GetWidth() - grid_idx.x * mGridSize);
         float h = glm::min<float>(mGridSize, mImage->GetHeight() - grid_idx.y * mGridSize);
-        float grid_prob = (MISC ? mAliasTableMISC : mAliasTable).GetProbs()[grid_idx.x + grid_idx.y * mGridCount.x];
+        float grid_prob = ((MISC && (!mCompensated)) ? mAliasTableMISC : mAliasTable).GetProbs()[grid_idx.x + grid_idx.y * mGridCount.x];
         return grid_prob * mImage->GetWidth() * mImage->GetHeight() / (2 * PI * PI * glm::sqrt(1 - light_direction.y * light_direction.y) * w * h);
     }
 }

@@ -36,7 +36,6 @@ namespace pbrt
             : mDinc(dinc), mEta2(eta2), mEta3(eta3), mKappa3(kappa3), mMicrofacet(alpha_x, alpha_z), mBaseColor(base_color) {}
 
         std::optional<BSDFInfo> SampleBSDF(const glm::vec3 &hit_point, const glm::vec3 &view_dir, const RNG &rng) const override;
-        std::optional<BSDFInfo> SampleBSDF(const glm::vec3 &hit_point, const glm::vec3 &view_dir, const Sampler &sequence) const override;
         glm::vec3 BSDF(const glm::vec3 &hit_point, const glm::vec3 &light_dir, const glm::vec3 &view_dir) const override;
         float PDF(const glm::vec3 &hit_point, const glm::vec3 &light_dir, const glm::vec3 &view_dir) const override;
         bool IsDeltaDistribution() const override { return mMicrofacet.IsDeltaDistribution(); }

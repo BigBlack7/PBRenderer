@@ -11,6 +11,7 @@
 #include <shape/sphere.hpp>
 #include <shape/model.hpp>
 #include <shape/circle.hpp>
+#include <shape/quad.hpp>
 #include <shape/scene.hpp>
 #include <utils/logger.hpp>
 #include <utils/rgb.hpp>
@@ -34,6 +35,7 @@ int main()
     pbrt::Model bunny("../../../assets/models/bunny.obj");
     pbrt::Model teapot("../../../assets/models/teapot.obj");
     pbrt::Circle circle({0.f, 1.999f, 0.f}, {0.f, -1.f, 0.f}, 0.3f);
+    pbrt::Quad quad({0.f, 1.999f, 0.f}, {0.f, -1.f, 0.f}, 0.28f);
     pbrt::Sphere sphere({0.f, 0.f, 0.f}, 0.35f);
 
     // scene
@@ -53,14 +55,14 @@ int main()
     // scene.AddShape(sphere, new pbrt::DielectricMaterial{pbrt::RGB(255, 255, 255), 1.4f, 0.2f, 0.2f}, {-0.3f, 0.35f, -0.3f});
 
     // bunny
-    //scene.AddShape(bunny, new pbrt::DielectricMaterial{pbrt::RGB(221, 180, 221), 1.61f, 0.2f, 0.2f}, {0.f, 0.2f, 0.f}, {0.7f, 0.7f, 0.7f}, {0.f, -70.f, 0.f});
+    // scene.AddShape(bunny, new pbrt::DielectricMaterial{pbrt::RGB(221, 180, 221), 1.61f, 0.2f, 0.2f}, {0.f, 0.2f, 0.f}, {0.7f, 0.7f, 0.7f}, {0.f, -70.f, 0.f});
 
     // teapot
     scene.AddShape(teapot, new pbrt::ConductorMaterial{{0.1f, 1.2f, 1.8f}, {5.f, 2.5f, 2.f}, 0.5f, 0.3f}, {0.f, 0.8f, 0.32f}, {0.1f, 0.1f, 0.1f}, {0.f, -20.f, 0.f});
     scene.AddShape(teapot, new pbrt::DielectricMaterial{pbrt::RGB(255, 255, 255), 1.2f, 0.2f, 0.2f}, {-0.4f, 0.2f, -0.2f}, {0.1f, 0.1f, 0.1f}, {0.f, -20.f, 0.f});
 
     // light
-    pbrt::Image env_map("../../../assets/hdris/puresky04.exr");
+    pbrt::Image env_map("../../../assets/hdris/puresky01.exr");
     scene.AddInfiniteLight(new pbrt::EnvLight{&env_map});
 
     auto *light = new pbrt::AreaLight{circle, pbrt::RGB(255, 220, 150), false};
@@ -68,10 +70,10 @@ int main()
     scene.Build();
 
     pbrt::MISRenderer mis{camera, scene};
-    pbrt::Previewer previewer(mis, 1);
+    pbrt::Previewer previewer(mis, 30);
     if (previewer.Preview())
     {
-        mis.Render("../../../cornellteapot-rng.exr", 64);
+        mis.Render("../../../cornellbox.ppm", 32);
     }
 
     PBRT_INFO("PBRT Shutdown!");

@@ -1,5 +1,6 @@
 ﻿#include "areaLight.hpp"
 #include "sampler/spherical.hpp"
+#include "shape/model.hpp"
 
 namespace pbrt
 {
@@ -29,28 +30,6 @@ namespace pbrt
         float det_J = glm::abs(cos_theta / glm::dot(light_direction_raw, light_direction_raw));
         return LightInfo{shape_sample->__point__, light_direction, mLe, shape_sample->__pdf__ / det_J};
     }
-
-    // std::optional<LightInfo> AreaLight::SampleLight(const glm::vec3 &surface_point, float scene_radius, const Sampler &sequence, bool MISC) const
-    // {
-    //     auto shape_sample = mShape.SampleShape(sequence);
-    //     if (!shape_sample.has_value())
-    //     {
-    //         return {};
-    //     }
-    //     glm::vec3 light_direction_raw = shape_sample->__point__ - surface_point;
-    //     glm::vec3 light_direction = glm::normalize(light_direction_raw);
-    //     float cos_theta = glm::dot(shape_sample->__normal__, -light_direction);
-    //     if (cos_theta == 0.f)
-    //     {
-    //         return {};
-    //     }
-    //     if ((!mIsTwoSides) && cos_theta < 0.f)
-    //     {
-    //         return {};
-    //     }
-    //     float det_J = glm::abs(cos_theta / glm::dot(light_direction_raw, light_direction_raw));
-    //     return LightInfo{shape_sample->__point__, light_direction, mLe, shape_sample->__pdf__ / det_J};
-    // }
 
     glm::vec3 AreaLight::GetRadiance(const glm::vec3 &surface_point, const glm::vec3 &light_point, const glm::vec3 &normal) const
     {

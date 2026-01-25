@@ -1,6 +1,5 @@
 ﻿#pragma once
 #include "utils/rng.hpp"
-#include "sequence/sampler.hpp"
 #include <glm/glm.hpp>
 
 namespace pbrt
@@ -24,7 +23,6 @@ namespace pbrt
 
         float VisibleNormalDistribution(const glm::vec3 &view_dir, const glm::vec3 &microfacet_normal) const; // 法线分布可见性函数
         glm::vec3 SampleVisibleNormal(const glm::vec3 &view_dir, const RNG &rng) const;                       // 采样可见法线
-        glm::vec3 SampleVisibleNormal(const glm::vec3 &view_dir, const Sampler &sequence) const;              // 采样可见法线
 
         float GetAlphaX() const { return mAlphaX; };
         float GetAlphaZ() const { return mAlphaZ; };

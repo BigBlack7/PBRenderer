@@ -16,7 +16,7 @@ namespace pbrt
     public:
         Circle(const glm::vec3 &point, const glm::vec3 &normal, float radius) : __point__(point), __normal__(glm::normalize(normal)), __radius__(radius), __bounds__()
         {
-            glm::vec3 up = glm::abs(__normal__.y) < 0.99999 ? glm::vec3(0, 1, 0) : glm::vec3(0, 0, 1);
+            glm::vec3 up = glm::abs(__normal__.y) < 0.99999f ? glm::vec3(0.f, 1.f, 0.f) : glm::vec3(0.f, 0.f, 1.f);
             __xAxis__ = glm::normalize(glm::cross(__normal__, up));
             __zAxis__ = glm::normalize(glm::cross(__xAxis__, __normal__));
 
@@ -33,6 +33,5 @@ namespace pbrt
         std::optional<HitInfo> Intersect(const Ray &ray, float t_min, float t_max) const override;
         float GetArea() const override;
         std::optional<ShapeInfo> SampleShape(const RNG &rng) const override;
-        // std::optional<ShapeInfo> SampleShape(const Sampler &sequence) const override;
     };
 }

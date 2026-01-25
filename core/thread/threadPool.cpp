@@ -68,9 +68,9 @@ namespace pbrt
         void Run() override
         {
             // 遍历块内元素
-            for (size_t i = 0; i < __chunkWidth__; i++)
+            for (size_t j = 0; j < __chunkHeight__; j++)
             {
-                for (size_t j = 0; j < __chunkHeight__; j++)
+                for (size_t i = 0; i < __chunkWidth__; i++)
                 {
                     __lambda__(__x__ + i, __y__ + j);
                 }
@@ -102,7 +102,7 @@ namespace pbrt
         │                                                          │
         │ ┌────┬────┬────┬────┐                                    │
         │ │    │    │    │    │                                    │
-        │ │ 480│ 480│ 480│ 80 │ ← 边界自适应: 最后一块宽度=80       │
+        │ │ 480│ 480│ 480│ 80 │ ← 边界自适应: 最后一块宽度=80        │
         │ │ ×  │ ×  │ ×  │ ×  │                                    │
         │ │270 │270 │270 │270 │                                    │
         │ │    │    │    │    │                                    │
@@ -120,6 +120,7 @@ namespace pbrt
         float chunk_height_float = static_cast<float>(height) / std::sqrt(mThreads.size());
         if (is_complex)
         {
+            // 复杂任务时, 进一步减小块大小
             chunk_width_float /= std::sqrt(16);
             chunk_height_float /= std::sqrt(16);
         }

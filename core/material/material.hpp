@@ -1,6 +1,5 @@
 ﻿#pragma once
 #include "utils/rng.hpp"
-#include "sequence/sampler.hpp"
 #include <glm/glm.hpp>
 #include <optional>
 
@@ -22,7 +21,6 @@ namespace pbrt
 
     public:
         virtual std::optional<BSDFInfo> SampleBSDF(const glm::vec3 &hit_point, const glm::vec3 &view_dir, const RNG &rng) const = 0;
-        virtual std::optional<BSDFInfo> SampleBSDF(const glm::vec3 &hit_point, const glm::vec3 &view_dir, const Sampler &sequence) const = 0;
         virtual glm::vec3 BSDF(const glm::vec3 &hit_point, const glm::vec3 &light_dir, const glm::vec3 &view_dir) const = 0;
         virtual float PDF(const glm::vec3 &hit_point, const glm::vec3 &light_dir, const glm::vec3 &view_dir) const = 0;
         virtual bool IsDeltaDistribution() const = 0;

@@ -25,7 +25,7 @@ namespace pbrt
                 {
                     continue;
                 }
-                RGB rgb(pixel.__color__ / static_cast<float>(pixel.__sampleCount__));
+                RGB rgb(pixel.__color__ / static_cast<double>(pixel.__sampleCount__));
                 auto index = (y * mWidth + x) * 4;
                 buffer[index + 0] = rgb.mRed;
                 buffer[index + 1] = rgb.mGreen;
@@ -47,8 +47,7 @@ namespace pbrt
                                          {
                                              return;
                                          }
-                                         buffer[y * mWidth + x] = pixel.__color__ / static_cast<float>(pixel.__sampleCount__);
-
+                                         buffer[y * mWidth + x] = pixel.__color__ / static_cast<double>(pixel.__sampleCount__);
                                          // end
                                      },
                                      false);

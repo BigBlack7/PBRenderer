@@ -3,15 +3,31 @@
 
 namespace pbrt
 {
-    std::optional<HitInfo> pbrt::Circle::Intersect(const Ray &ray, float t_min, float t_max) const
+    std::optional<HitInfo> Circle::Intersect(const Ray &ray, float t_min, float t_max) const
     {
+        /*
+            平面方程: (P - P₀) · N = 0
+            P₀: 平面上的一点(圆心)
+            N: 平面法线
+            P: 平面上任意点
+
+            射线方程: P = O + tD
+
+            (O + tD - P₀) · N = 0
+            t = (P₀ - O) · N / (D · N)
+        */
         float hit_t = glm::dot(__point__ - ray.__origin__, __normal__) / glm::dot(ray.__direction__, __normal__);
         glm::vec3 hit_point_to_center = ray.Hit(hit_t) - __point__;
         if ((hit_t > t_min && hit_t < t_max) && (glm::dot(hit_point_to_center, hit_point_to_center) < __radius__ * __radius__))
         {
-            return HitInfo{hit_t, ray.Hit(hit_t), __normal__};
+            return HitInfo{
+                .__t__ = hit_t,
+                .__hitPoint__ = ray.Hit(hit_t),
+                .__normal__ = __normal__
+                // end
+            };
         }
-        return {};
+        return std::nullopt;
     }
 
     float Circle::GetArea() const
@@ -25,11 +41,4 @@ namespace pbrt
         glm::vec3 sample_point = __point__ + sample_local.x * __xAxis__ + sample_local.y * __zAxis__;
         return ShapeInfo{sample_point, __normal__, 1.f / GetArea()};
     }
-
-    // std::optional<ShapeInfo> Circle::SampleShape(const Sampler &sequence) const
-    // {
-    //     glm::vec2 sample_local = UniformSampleUnitDisk(sequence.Get2D()) * __radius__;
-    //     glm::vec3 sample_point = __point__ + sample_local.x * __xAxis__ + sample_local.y * __zAxis__;
-    //     return ShapeInfo{sample_point, __normal__, 1.f / GetArea()};
-    // }
 }

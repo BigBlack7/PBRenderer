@@ -174,40 +174,6 @@ namespace pbrt
         return BSDFInfo{bsdf, pdf, light_dir};
     }
 
-    std::optional<BSDFInfo> IridescentMaterial::SampleBSDF(const glm::vec3 &hit_point, const glm::vec3 &view_dir, const Sampler &sequence) const
-    {
-        glm::vec3 microfacet_normal(0.f, 1.f, 0.f);
-        if (!mMicrofacet.IsDeltaDistribution())
-        {
-            microfacet_normal = mMicrofacet.SampleVisibleNormal(view_dir, sequence);
-        }
-
-        // Compute reflection direction
-        glm::vec3 light_dir = -view_dir + 2.f * glm::dot(view_dir, microfacet_normal) * microfacet_normal;
-
-        // Compute angles for thin-film interference
-        float cos_theta1 = glm::abs(glm::dot(view_dir, microfacet_normal));
-        float eta_2 = glm::mix(1.f, mEta2, glm::smoothstep(0.f, 0.03f, mDinc));
-        float sin2_theta1 = 1.f - cos_theta1 * cos_theta1;
-        float cos_theta2 = std::sqrt(glm::max(0.f, 1.f - (1.f / (eta_2 * eta_2)) * sin2_theta1));
-
-        // Compute iridescent color
-        glm::vec3 iridescent_color = ComputeIridescence(cos_theta1, cos_theta2);
-
-        if (mMicrofacet.IsDeltaDistribution())
-        {
-            return BSDFInfo{iridescent_color / glm::abs(light_dir.y), 1.f, light_dir};
-        }
-
-        // Microfacet BRDF formula
-        float D = mMicrofacet.D(microfacet_normal);
-        float G = mMicrofacet.G2(light_dir, view_dir, microfacet_normal);
-        glm::vec3 bsdf = iridescent_color * D * G / glm::abs(4.f * light_dir.y * view_dir.y);
-        float pdf = mMicrofacet.VisibleNormalDistribution(view_dir, microfacet_normal) / glm::abs(4.0f * glm::dot(view_dir, microfacet_normal));
-
-        return BSDFInfo{bsdf, pdf, light_dir};
-    }
-
     glm::vec3 IridescentMaterial::BSDF(const glm::vec3 &hit_point, const glm::vec3 &light_dir, const glm::vec3 &view_dir) const
     {
         if (mMicrofacet.IsDeltaDistribution())

@@ -4,8 +4,8 @@
 
 namespace pbrt
 {
-    Camera::Camera(Film &film, const glm::vec3 &position, const glm::vec3 &viewpoint, float fovy)
-        : mFilm(film), mPosition(position),mFovy(fovy)
+    // 世界空间 -> 相机空间 -> 裁剪空间 -> NDC空间 -> 屏幕空间
+    Camera::Camera(Film &film, const glm::vec3 &position, const glm::vec3 &viewpoint, float fovy) : mFilm(film), mPosition(position), mFovy(fovy)
     {
         mViewDirection = glm::normalize(viewpoint - position);
         Update();
@@ -26,10 +26,10 @@ namespace pbrt
         ndc.y = 1.f - ndc.y;   // ndc坐标系y轴向上, 而屏幕坐标系y轴向下, 所以需要翻转y轴
         ndc = ndc * 2.f - 1.f; // 将ndc坐标从[0, 1]映射到[-1, 1]范围
         /*
-            clip空间坐标(x, y, 0, near) ---> NDC空间坐标(x/near, y/near, 0)
-            故设置近平面near为1, 可以用clip坐标xyz直接得到NDC坐标
+            clip空间坐标(x, y, 0, near) ---> NDC空间坐标(x/near, y/near, 0, 1)
+            故设置近平面near为1, 可以用NDC坐标直接得到clip坐标xyz
         */
-        glm::vec4 clip_coord = glm::vec4(ndc, 0.f, 1.f);
+        glm::vec4 clip_coord{ndc, 0.f, 1.f};
         glm::vec3 world_coord = mWorldFromCamera * mCameraFromClip * clip_coord;
 
         return Ray{mPosition, glm::normalize(world_coord - mPosition)};
@@ -96,7 +96,7 @@ namespace pbrt
     {
         auto viewpoint = mPosition + mViewDirection;
         /* 剪裁空间到相机空间的变换矩阵
-            相机到剪裁空间需要进行透视投影，故获得透视矩阵的逆矩阵
+           相机到剪裁空间需要进行透视投影, 故获得透视矩阵的逆矩阵
          */
         mCameraFromClip = glm::inverse(glm::perspective(
             glm::radians(mFovy),
@@ -104,7 +104,7 @@ namespace pbrt
             1.f,
             2.f));
         /* 相机空间到世界空间的变换矩阵
-            物体从世界坐标到相机坐标需要进行相机的变换，故获得相机的逆矩阵
+           物体从世界坐标到相机坐标需要进行相机的变换, 故获得相机的逆矩阵
         */
         mWorldFromCamera = glm::inverse(glm::lookAt(mPosition, viewpoint, {0.f, 1.f, 0.f}));
     }

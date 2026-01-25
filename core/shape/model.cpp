@@ -9,16 +9,16 @@ namespace pbrt
 {
     Model::Model(const std::filesystem::path &filename, bool byMyself)
     {
-        std::vector<Triangle> triangles;
-        std::vector<glm::vec3> positions;
-        std::vector<glm::vec3> normals;
-
         std::ifstream file(filename);
         if (!file.good())
         {
             PBRT_ERROR("Model file not found at {}", std::filesystem::absolute(filename).string());
             return;
         }
+
+        std::vector<Triangle> triangles;
+        std::vector<glm::vec3> positions;
+        std::vector<glm::vec3> normals;
 
         std::string line;
         char trash;

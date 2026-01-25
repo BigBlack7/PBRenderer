@@ -3,11 +3,6 @@
 - Refer to PBRT-v4
 - Build it by msvc
 
-# Gallery(1024 spp)
-![CornellboxSeries](gallery/cornellbox01.png)
-![CornellboxSeries](gallery/cornellbox02.png)
-![CornellboxSeries](gallery/cornellbox03.png)
-
 # NameFormat
 
 - file name(xxXxx)
@@ -41,3 +36,11 @@
 - Spectrum
 - Scene Parser
 - Imgui Controller
+- Transform
+
+# Gallery(1024 spp)
+
+![CornellboxSeries](gallery/cornellbox01.png)
+![CornellboxSeries](gallery/cornellbox02.png)
+![CornellboxSeries](gallery/cornellbox03.png)
+![CornellboxSeries](gallery/cornellbox04.png)

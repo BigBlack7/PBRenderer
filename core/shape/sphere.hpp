@@ -15,7 +15,6 @@ namespace pbrt
         Bounds GetBounds() const override { return {__center__ - __radius__, __center__ + __radius__}; }
         float GetArea() const override;
         std::optional<ShapeInfo> SampleShape(const RNG &rng) const override;
-        // std::optional<ShapeInfo> SampleShape(const Sampler &sequence) const override;
     };
 
 }
