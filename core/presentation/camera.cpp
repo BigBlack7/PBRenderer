@@ -32,7 +32,7 @@ namespace pbrt
         glm::vec4 clip_coord{ndc, 0.f, 1.f};
         glm::vec3 world_coord = mWorldFromCamera * mCameraFromClip * clip_coord;
 
-        return Ray{mPosition, glm::normalize(world_coord - mPosition)};
+        return Ray{mPosition, glm::normalize(world_coord - mPosition)}; // 相机位置为射线原点, 方向为相机位置指向世界坐标
     }
 
     void Camera::Move(float dt, Direction direction)

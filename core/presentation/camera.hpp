@@ -26,7 +26,7 @@ namespace pbrt
         // 相机移动
         glm::vec3 mViewDirection;           // 相机朝向
         float mTheta, mPhi;                 // 相机的俯仰角和偏航角
-        float mFovy;                        // 相机的垂直视角
+        float mFovy;                        // 相机的视张角
         float mMoveSpeed{2.f};              // 移动速度
         glm::vec2 mTurnSpeed{0.15f, 0.07f}; // 转向速度
 

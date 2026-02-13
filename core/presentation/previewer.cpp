@@ -19,10 +19,6 @@ namespace pbrt
         mScale = 1.f;
     }
 
-    Previewer::~Previewer()
-    {
-    }
-
     bool Previewer::Preview()
     {
         // 创建窗口
@@ -34,7 +30,7 @@ namespace pbrt
 
         mTexture = std::make_shared<sf::Texture>(sf::Vector2u(mFilmResolution.x, mFilmResolution.y)); // 纹理大小
         mTexture->setSmooth(true);                                                                    // 在低分辨率下会更加平滑
-        mSprite = std::make_shared<sf::Sprite>(*mTexture);                                            // 精灵大小
+        mSprite = std::make_shared<sf::Sprite>(*mTexture);                                            // 让精灵持有纹理
 
         SetResolution(0.1f); // 默认1/10的分辨率
         auto &camera = mRenderer.mCamera;

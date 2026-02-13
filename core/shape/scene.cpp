@@ -14,7 +14,13 @@ namespace pbrt
             glm::rotate(glm::mat4(1.f), glm::radians(rotate.x), {1.f, 0.f, 0.f}) *
             glm::scale(glm::mat4(1.f), scale);
 
-        __shapeInfos__.push_back(ShapeBVHInfo{&shape, material, world_from_object, glm::inverse(world_from_object)});
+        __shapeBVHInfos__.push_back(ShapeBVHInfo{
+            .__shape__ = &shape,
+            .__material__ = material,
+            .__worldFromObject__ = world_from_object,
+            .__objectFromWorld__ = glm::inverse(world_from_object)
+            // end
+        });
     }
 
     std::optional<HitInfo> Scene::Intersect(const Ray &ray, float t_min, float t_max) const

@@ -36,12 +36,13 @@ namespace pbrt
         RecursiveSplit(mRoot, state);
         MasterThreadPool.Wait();
 
-        PBRT_DEBUG("Total Scene Node Count: {}", (size_t)state.__totalNodeCount__);
-        PBRT_DEBUG("Scene Leaf Node Count: {}", state.__leafNodeCount__);
-        PBRT_DEBUG("ShapeBVHInfo Count: {}", shapeBVHInfo_count);
-        PBRT_DEBUG("Mean Scene Leaf Node ShapeBVHInfo Count: {}", static_cast<float>(shapeBVHInfo_count) / static_cast<float>(state.__leafNodeCount__));
-        PBRT_DEBUG("Max Scene Leaf Node ShapeBVHInfo Count: {}", state.__maxLeafNodeShapeBVHInfoCount__);
-        PBRT_DEBUG("Max Scene Tree Depth: {}", state.__maxTreeDepth__);
+        PBRT_INFO("--Scene BVH State--");
+        PBRT_DEBUG("Scene - Total Node Count: {}", (size_t)state.__totalNodeCount__);
+        PBRT_DEBUG("Scene - Leaf Node Count: {}", state.__leafNodeCount__);
+        PBRT_DEBUG("Scene - ShapeBVHInfo Count: {}", shapeBVHInfo_count);
+        PBRT_DEBUG("Scene - Mean Leaf Node ShapeBVHInfo Count: {}", static_cast<float>(shapeBVHInfo_count) / static_cast<float>(state.__leafNodeCount__));
+        PBRT_DEBUG("Scene - Max Leaf Node ShapeBVHInfo Count: {}", state.__maxLeafNodeShapeBVHInfoCount__);
+        PBRT_DEBUG("Scene - Max Tree Depth: {}", state.__maxTreeDepth__);
 
         // 预分配内存
         mNodes.reserve(state.__totalNodeCount__);
@@ -99,6 +100,7 @@ namespace pbrt
                 auto shapeBVHInfo_iter = mOrderedShapeBVHInfos.begin() + node.__shapeBVHInfoIdx__;
                 for (size_t i = 0; i < node.__shapeBVHInfoCount__; i++)
                 {
+                    // 用对象空间光线进行相交检测
                     auto ray_object = ray.ObjectFromWorld(shapeBVHInfo_iter->__objectFromWorld__);
                     auto hit_info = shapeBVHInfo_iter->__shape__->Intersect(ray_object, t_min, t_max);
                     DEBUG_INFO(ray.__boundsTestCount__ += ray_object.__boundsTestCount__);
@@ -135,6 +137,7 @@ namespace pbrt
         if (closest_shapeBVHInfo)
         {
             closest_hit_info->__hitPoint__ = closest_shapeBVHInfo->__worldFromObject__ * glm::vec4(closest_hit_info->__hitPoint__, 1.f);
+            // TBN方法计算法线变换
             closest_hit_info->__normal__ = glm::normalize(glm::vec3(glm::transpose(closest_shapeBVHInfo->__objectFromWorld__) * glm::vec4(closest_hit_info->__normal__, 0.f)));
             closest_hit_info->__material__ = closest_shapeBVHInfo->__material__;
         }
@@ -156,7 +159,6 @@ namespace pbrt
         float min_cost = std::numeric_limits<float>::infinity();
         size_t min_split_idx = 0;
         Bounds min_left_bounds{}, min_right_bounds{};
-        size_t min_left_shapeBVHInfo_count = 0, min_right_shapeBVHInfo_count = 0;
         constexpr size_t bucket_count = 12;
         for (size_t axis = 0; axis < 3; axis++)
         {
@@ -195,8 +197,6 @@ namespace pbrt
                         min_split_idx = i;
                         min_left_bounds = left_bounds;
                         min_right_bounds = right_bounds;
-                        min_left_shapeBVHInfo_count = left_shapeBVHInfo_count;
-                        min_right_shapeBVHInfo_count = right_shapeBVHInfo_count;
                     }
                 }
                 left_bounds.Expand(bucket_bounds[i]);
@@ -221,12 +221,12 @@ namespace pbrt
         while (head_ptr <= tail_ptr)
         {
             const auto &shapeBVHInfo_head = mOrderedShapeBVHInfos[head_ptr];
-            size_t bucket_idx_head = glm::clamp<size_t>(glm::floor((shapeBVHInfo_head.__center__[node->__splitAxis__] - node->__bounds__.__bMin__[node->__splitAxis__]) * bucket_count / diagonal[node->__splitAxis__]), 0, bucket_count - 1);
-            bool head_is_left = bucket_idx_head < min_split_idx;
+            size_t head_bucket_idx = glm::clamp<size_t>(glm::floor((shapeBVHInfo_head.__center__[node->__splitAxis__] - node->__bounds__.__bMin__[node->__splitAxis__]) * bucket_count / diagonal[node->__splitAxis__]), 0, bucket_count - 1);
+            bool head_is_left = head_bucket_idx < min_split_idx;
 
             const auto &shapeBVHInfo_tail = mOrderedShapeBVHInfos[tail_ptr];
-            size_t bucket_idx_tail = glm::clamp<size_t>(glm::floor((shapeBVHInfo_tail.__center__[node->__splitAxis__] - node->__bounds__.__bMin__[node->__splitAxis__]) * bucket_count / diagonal[node->__splitAxis__]), 0, bucket_count - 1);
-            bool tail_is_left = bucket_idx_tail < min_split_idx;
+            size_t tail_bucket_idx = glm::clamp<size_t>(glm::floor((shapeBVHInfo_tail.__center__[node->__splitAxis__] - node->__bounds__.__bMin__[node->__splitAxis__]) * bucket_count / diagonal[node->__splitAxis__]), 0, bucket_count - 1);
+            bool tail_is_left = tail_bucket_idx < min_split_idx;
 
             if (head_is_left && tail_is_left)
             {

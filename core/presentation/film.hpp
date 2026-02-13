@@ -29,6 +29,7 @@ namespace pbrt
         Pixel GetPixel(size_t x, size_t y) const { return mPixels[y * mWidth + x]; }
         void AddSample(size_t x, size_t y, const glm::vec3 &color)
         {
+            // NaN check, 避免数值不稳定导致的图像异常(黑点噪声)
             if (glm::any(glm::isnan(color)))
             {
                 return;

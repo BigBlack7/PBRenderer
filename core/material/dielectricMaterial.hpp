@@ -13,6 +13,7 @@ namespace pbrt
         Microfacet mMicrofacet;
 
     private:
+        // 约定光线所在介质ηi(一般为空气即ηi=1), 进入介质折射率ηt, η = ηi/ηt
         float Fresnel(float etai_div_etat, float cos_theta_t, float &cos_theta_i) const;
 
     public:

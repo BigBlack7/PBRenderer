@@ -28,11 +28,13 @@ int main()
     // models
     pbrt::Model teapot("../../../assets/models/teapot.obj");
     pbrt::Model ajax("../../../assets/models/ajax.obj");
+    pbrt::Circle ground{{0.f, 0.f, 0.f}, {0.f, 1.f, 0.f}, 100.f};
     pbrt::Scene scene{};
 
     scene.AddShape(teapot, new pbrt::DielectricMaterial{pbrt::RGB(255, 255, 255), 1.2f, 0.1f, 0.1f}, {-5.f, 0.4f, 4.5f}, {1.f, 1.f, 1.f}, {0.f, -10.f, 0.f});
     scene.AddShape(teapot, new pbrt::ConductorMaterial{{0.1f, 1.2f, 1.8f}, {5.f, 2.5f, 2.f}, 0.2f, 0.2f}, {-5.f, 0.4f, -4.5f}, {1.f, 1.f, 1.f});
     // scene.AddShape(ajax, new pbrt::IridescentMaterial{0.8f, 2.f, 3.f, 0.2f, 0.3f, 0.3f}, {-5.f, 0.4f, -4.5f}, {7.f, 7.f, 7.f}, {0.f, 90.f, 0.f});
+    scene.AddShape(ground, new pbrt::GroundMaterial{pbrt::RGB(225, 225, 225)});
 
     // light
     pbrt::Image env_map("../../../assets/hdris/puresky04.exr");
@@ -43,7 +45,7 @@ int main()
     pbrt::Previewer previewer(mis, 1);
     if (previewer.Preview())
     {
-        mis.Render("../../../teapot.exr", 1024);
+        mis.Render("../../../teapot.exr", 64);
     }
 
     PBRT_INFO("PBRT Shutdown!");

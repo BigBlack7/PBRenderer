@@ -6,36 +6,38 @@
 
 namespace pbrt
 {
+    // BVH二叉树节点
     struct BVHTreeNode
     {
     public:
         Bounds __bounds__{};
-        size_t __start__, __end__;
+        size_t __start__, __end__; // [__start__, __end__)
         BVHTreeNode *__children__[2];
 
         size_t __depth__;
         uint8_t __splitAxis__;
     };
 
+    // BVH线性节点
     struct alignas(32) BVHNode
     {
     public:
         Bounds __bounds__{};
         union
         {
-            int __right__;
-            int __triangleIdx__;
+            int __right__;       // 右子节点索引(仅非叶子节点有效)
+            int __triangleIdx__; // 三角形起始位置索引(仅叶子节点有效)
         };
-        uint16_t __triangleCount__;
+        uint16_t __triangleCount__; // 节点三角形数量
         uint8_t __splitAxis__;
     };
 
     struct BVHState
     {
     public:
-        std::atomic<size_t> __totalNodeCount__{};
-        size_t __leafNodeCount__{};
-        size_t __maxLeafNodeTriangleCount__{};
+        std::atomic<size_t> __totalNodeCount__{}; // 总节点数
+        size_t __leafNodeCount__{};               // 叶子节点数
+        size_t __maxLeafNodeTriangleCount__{};    // 最大叶子节点三角形数量
         size_t __maxTreeDepth__{};
         SpinLock __lock__{};
 
@@ -49,7 +51,7 @@ namespace pbrt
         }
     };
 
-    class BVHTreeNodeAllocator
+    class BVHTreeNodeAllocator // BVH二叉树节点分配器, 避免频繁申请内存的开销
     {
     private:
         size_t mPtr;
@@ -62,11 +64,13 @@ namespace pbrt
         BVHTreeNode *Allocate()
         {
             Guard guard(mLock);
+            // 初始化时会一次性申请大量缓存, 此后只当指针指向最后一个缓存块时, 再申请新的缓存块
             if (mPtr == 4096)
             {
                 mNodesList.push_back(new BVHTreeNode[4096]);
                 mPtr = 0;
             }
+            // 返回当前最后一块缓存(当前可用的节点地址)的指针, 并将指针后移一位
             return &(mNodesList.back()[mPtr++]);
         }
 
@@ -90,8 +94,8 @@ namespace pbrt
         std::optional<ShapeInfo> SampleShape(const RNG &rng) const override;
 
     private:
-        void RecursiveSplit(BVHTreeNode *node, BVHState &state);
-        size_t RecursiveFlatten(BVHTreeNode *node);
+        void RecursiveSplit(BVHTreeNode *node, BVHState &state); // 递归划分BVH节点(二叉树结构)
+        size_t RecursiveFlatten(BVHTreeNode *node);              // 递归将BVH二叉树转换为线性结构
 
     private:
         std::vector<BVHNode> mNodes;
@@ -99,6 +103,6 @@ namespace pbrt
         BVHTreeNodeAllocator mNodeAllocator{};
         BVHTreeNode *mRoot;
         float mArea;
-        AliasTable mTable;
+        AliasTable mTable; // 三角形采样表
     };
 }

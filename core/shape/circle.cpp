@@ -37,8 +37,13 @@ namespace pbrt
 
     std::optional<ShapeInfo> Circle::SampleShape(const RNG &rng) const
     {
-        glm::vec2 sample_local = UniformSampleUnitDisk({rng.Uniform(), rng.Uniform()}) * __radius__;
-        glm::vec3 sample_point = __point__ + sample_local.x * __xAxis__ + sample_local.y * __zAxis__;
-        return ShapeInfo{sample_point, __normal__, 1.f / GetArea()};
+        glm::vec2 sample_local = UniformSampleUnitDisk({rng.Uniform(), rng.Uniform()}) * __radius__;  // 局部坐标系下的采样点
+        glm::vec3 sample_point = __point__ + sample_local.x * __xAxis__ + sample_local.y * __zAxis__; // 世界坐标系下的采样点
+        return ShapeInfo{
+            .__point__ = sample_point,
+            .__normal__ = __normal__,
+            .__pdf__ = 1.f / GetArea()
+            // end
+        };
     }
 }

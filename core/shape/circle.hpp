@@ -20,6 +20,7 @@ namespace pbrt
             __xAxis__ = glm::normalize(glm::cross(__normal__, up));
             __zAxis__ = glm::normalize(glm::cross(__xAxis__, __normal__));
 
+            // 变换坐标系
             Bounds local_bounds{{-radius, -0.001f, -radius}, {radius, 0.001f, radius}};
             for (size_t i = 0; i < 8; i++)
             {

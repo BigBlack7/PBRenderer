@@ -65,6 +65,11 @@ namespace pbrt
         float z = (rng.Uniform() * 2.f - 1.f) * __halfWidthZ__;
 
         glm::vec3 sample_point = __point__ + x * __xAxis__ + z * __zAxis__;
-        return ShapeInfo{sample_point, __normal__, 1.f / GetArea()};
+        return ShapeInfo{
+            .__point__ = sample_point,
+            .__normal__ = __normal__,
+            .__pdf__ = 1.f / GetArea()
+            // end
+        };
     }
 }

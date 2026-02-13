@@ -22,6 +22,7 @@ namespace pbrt
             auto bounds_object = __shape__->GetBounds();
             for (size_t idx = 0; idx < 8; idx++)
             {
+                // 依次获取8个顶点的世界坐标并包括到包围盒中
                 auto corner_object = bounds_object.GetCorner(idx);
                 glm::vec3 corner_world = __worldFromObject__ * glm::vec4(corner_object, 1.f);
                 __bounds__.Expand(corner_world);

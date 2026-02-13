@@ -43,6 +43,7 @@ namespace pbrt
         MasterThreadPool.ParallelFor(mWidth, mHeight, [&](size_t x, size_t y)
                                      {
                                          auto pixel = GetPixel(x, y);
+                                         // 防止NaN check导致该像素内无采样点
                                          if (pixel.__sampleCount__ == 0)
                                          {
                                              return;
@@ -63,7 +64,7 @@ namespace pbrt
         }
         else
         {
-            PBRT_WARN("Film saved but file path verification failed: {}", filename.string());
+            PBRT_ERROR("Film saved but file path verification failed: {}", filename.string());
         }
     }
 }

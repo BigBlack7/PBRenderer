@@ -4,6 +4,7 @@ namespace pbrt
 {
     void LightSampler::Build(float scene_radius)
     {
+        // 计算每个光源的功率构建AliasTable
         std::vector<float> Phis;
         Phis.reserve(mLights.size());
         for (const auto *light : mLights)
@@ -18,13 +19,17 @@ namespace pbrt
         }
     }
 
-    std::optional<LightSampleInfo> LightSampler::SampleLight(float u) const
+    std::optional<LightSampleInfo> LightSampler::Sample(float u) const
     {
         if (mLights.empty())
         {
-            return {};
+            return std::nullopt;
         }
         auto sample_result = mAliasTable.Sample(u);
-        return LightSampleInfo{mLights[sample_result.__idx__], sample_result.__prob__};
+        return LightSampleInfo{
+            .__light__ = mLights[sample_result.__idx__],
+            .__prob__ = sample_result.__prob__
+            // end
+        };
     }
 }

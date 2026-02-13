@@ -58,3 +58,6 @@ add_subdirectory(openexr)
 
 # sfmlGUI
 add_subdirectory(imgui)
+
+# stb
+add_subdirectory(stb)

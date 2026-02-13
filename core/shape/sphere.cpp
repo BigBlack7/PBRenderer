@@ -66,6 +66,11 @@ namespace pbrt
     std::optional<ShapeInfo> Sphere::SampleShape(const RNG &rng) const
     {
         glm::vec3 normal = UniformSampleSphere(rng);
-        return ShapeInfo{__center__ + __radius__ * normal, normal, 1.f / GetArea()};
+        return ShapeInfo{
+            .__point__ = __center__ + __radius__ * normal,
+            .__normal__ = normal,
+            .__pdf__ = 1.f / GetArea()
+            // end
+        };
     }
 }

@@ -20,6 +20,7 @@ namespace pbrt
         const class AreaLight *mAreaLight{nullptr}; // 前向声明
 
     public:
+        // BSDF = BRDF + BTDF
         virtual std::optional<BSDFInfo> SampleBSDF(const glm::vec3 &hit_point, const glm::vec3 &view_dir, const RNG &rng) const = 0;
         virtual glm::vec3 BSDF(const glm::vec3 &hit_point, const glm::vec3 &light_dir, const glm::vec3 &view_dir) const = 0;
         virtual float PDF(const glm::vec3 &hit_point, const glm::vec3 &light_dir, const glm::vec3 &view_dir) const = 0;

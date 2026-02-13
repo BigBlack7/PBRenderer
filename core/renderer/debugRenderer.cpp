@@ -3,6 +3,7 @@
 
 namespace pbrt
 {
+        // 包围盒测试计数热力图渲染器
         glm::vec3 BTCRenderer::RenderPixel(const glm::ivec3 &pixel_coord)
         {
 #ifdef WITH_DEBUG_INFO
@@ -14,6 +15,7 @@ namespace pbrt
 #endif
         }
 
+        // 三角形相交测试计数热力图渲染器
         glm::vec3 TTCRenderer::RenderPixel(const glm::ivec3 &pixel_coord)
         {
 #ifdef WITH_DEBUG_INFO

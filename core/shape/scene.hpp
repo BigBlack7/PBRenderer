@@ -9,7 +9,7 @@ namespace pbrt
     struct Scene : public Shape
     {
     private:
-        std::vector<ShapeBVHInfo> __shapeInfos__;
+        std::vector<ShapeBVHInfo> __shapeBVHInfos__;
         SceneBVH __sceneBVH__;
         LightSampler __lightSampler__;
         LightSampler __lightSamplerMISC__;
@@ -49,7 +49,7 @@ namespace pbrt
 
         void Build()
         {
-            __sceneBVH__.Build(std::move(__shapeInfos__));
+            __sceneBVH__.Build(std::move(__shapeBVHInfos__));
             auto scene_bounds = __sceneBVH__.GetBounds();
             __radius__ = 0.5f * glm::distance(scene_bounds.__bMax__, scene_bounds.__bMin__);
             __lightSampler__.Build(__radius__);

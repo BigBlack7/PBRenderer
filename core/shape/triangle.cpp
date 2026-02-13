@@ -75,6 +75,11 @@ namespace pbrt
             u *= 0.5f;
             v -= u;
         }
-        return ShapeInfo{u * __p0__ + v * __p1__ + (1.f - u - v) * __p2__, u * __n0__ + v * __n1__ + (1.f - u - v) * __n2__, 1.f / GetArea()};
+        return ShapeInfo{
+            .__point__ = u * __p0__ + v * __p1__ + (1.f - u - v) * __p2__,
+            .__normal__ = u * __n0__ + v * __n1__ + (1.f - u - v) * __n2__,
+            .__pdf__ = 1.f / GetArea()
+            // end
+        };
     }
 }

@@ -29,7 +29,7 @@ namespace pbrt
         }
 
         void Build(float scene_radius);
-        std::optional<LightSampleInfo> SampleLight(float u) const;
+        std::optional<LightSampleInfo> Sample(float u) const;
 
         float GetProb(const Light *light) const // PMF
         {

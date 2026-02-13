@@ -12,11 +12,17 @@ namespace pbrt
     {
         if (MISC)
         {
-            return {};
+            return std::nullopt;
         }
-        
+
         glm::vec3 light_direction = UniformSampleSphere(rng);
-        return LightInfo{surface_point + 2.f * scene_radius * light_direction, light_direction, mLe, 1.f / (4.f * PI)};
+        return LightInfo{
+            .__lightPoint__ = surface_point + 2.f * scene_radius * light_direction,
+            .__direction__ = light_direction,
+            .__Le__ = mLe,
+            .__pdf__ = 1.f / (4.f * PI)
+            // end
+        };
     }
 
     float InfiniteLight::PDF(const glm::vec3 &surface_point, const glm::vec3 &light_point, const glm::vec3 &normal, bool MISC) const

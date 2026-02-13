@@ -127,7 +127,7 @@ namespace pbrt
         size_t chunk_width = std::ceil(chunk_width_float);
         size_t chunk_height = std::ceil(chunk_height_float);
 
-        // 添加所有任务块
+        // 添加所有任务块, 列优先遍历提高cache命中率
         for (size_t x = 0; x < width; x += chunk_width)
         {
             size_t W = ((x + chunk_width) > width) ? (width - x) : chunk_width;

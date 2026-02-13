@@ -7,18 +7,23 @@ namespace pbrt
     {
         if (view_dir.y == 0.f)
         {
-            return {};
+            return std::nullopt;
         }
 
         glm::vec3 light_dir = CosineSampleHemisphere({rng.Uniform(), rng.Uniform()});
         float pdf = CosineSampleHemispherePDF(light_dir);
         glm::vec3 bsdf = mAlbedo * INV_PI;
-        return BSDFInfo{bsdf, pdf, light_dir * glm::sign(view_dir.y)};
+        return BSDFInfo{
+            .__bsdf__ = bsdf,
+            .__pdf__ = pdf,
+            .__lightDirection__ = light_dir * glm::sign(view_dir.y)
+            // end
+        };
     }
 
     glm::vec3 DiffuseMaterial::BSDF(const glm::vec3 &hit_point, const glm::vec3 &light_dir, const glm::vec3 &view_dir) const
     {
-        if (light_dir.y * view_dir.y <= 0)
+        if (light_dir.y * view_dir.y <= 0) // 观察方向与光线方向不位于同一个半球
         {
             return {};
         }

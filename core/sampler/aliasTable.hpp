@@ -8,11 +8,11 @@ namespace pbrt
     private:
         struct Item
         {
-            double __q__;
-            union
+            double __q__; // 采样概率(重定位概率为1 - Q)
+            union         // 同时期只访问一个成员
             {
-                float __p__;
-                size_t __alias__;
+                float __p__;      // 概率 * 样本数
+                size_t __alias__; // 别名索引
             };
         };
 

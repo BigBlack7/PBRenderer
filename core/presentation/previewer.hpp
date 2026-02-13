@@ -31,7 +31,7 @@ namespace pbrt
 
     public:
         Previewer(Renderer &renderer, float fps = 30);
-        ~Previewer();
+        ~Previewer() = default;
         bool Preview();
 
         sf::RenderWindow &GetWindow() const

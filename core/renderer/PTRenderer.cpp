@@ -45,7 +45,7 @@ namespace pbrt
                     last_is_delta = hit_info->__material__->IsDeltaDistribution();
                     if (!last_is_delta)
                     {
-                        auto light_sample_info = mScene.GetLightSampler(false).SampleLight(rng.Uniform());
+                        auto light_sample_info = mScene.GetLightSampler(false).Sample(rng.Uniform());
                         if (light_sample_info.has_value())
                         {
                             auto light_info = light_sample_info->__light__->SampleLight(hit_info->__hitPoint__, mScene.GetRadius(), rng, false);

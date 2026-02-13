@@ -17,4 +17,5 @@ target_link_libraries(core
     spdlog::spdlog
     sfmlGUI
     OpenEXR::OpenEXR
+    stb
 )
