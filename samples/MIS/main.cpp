@@ -6,7 +6,7 @@
 #include <presentation/film.hpp>
 #include <presentation/camera.hpp>
 #include <presentation/previewer.hpp>
-#include <renderer/BDPTRenderer.hpp>
+#include <renderer/MISRenderer.hpp>
 #include <renderer/PTRenderer.hpp>
 #include <shape/sphere.hpp>
 #include <shape/model.hpp>
@@ -64,7 +64,7 @@ int main()
 
     scene.Build();
 
-    pbrt::BDPTRenderer mis{camera, scene};
+    pbrt::MISRenderer mis{camera, scene};
     pbrt::Previewer previewer(mis, 1);
     if (previewer.Preview())
     {

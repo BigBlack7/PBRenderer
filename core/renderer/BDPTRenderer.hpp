@@ -3,9 +3,5 @@
 
 namespace pbrt
 {
-    class BDPTRenderer : public MISRenderer
-    {
-    public:
-        BDPTRenderer(Camera &camera, const Scene &scene) : MISRenderer(camera, scene) {}
-    };
+    using BDPTRenderer = MISRenderer;
 }
