@@ -14,6 +14,13 @@ namespace pbrt
     class RGB
     {
     public:
+        enum class ToneMappingType
+        {
+            Gamma,   // 仅Gamma校正(现有行为)
+            Reinhard,
+            ACES
+        };
+
         int mRed, mGreen, mBlue; // 8位颜色分量 [0, 255]
 
     public:
@@ -21,10 +28,11 @@ namespace pbrt
 
         RGB(const glm::vec3 &color) // 转换到sRGB空间
         {
+            glm::vec3 mapped = ApplyToneMapping(color);
             float inv_gamma = 1.f / 2.2f;
-            mRed = glm::clamp<int>(glm::pow(color.r, inv_gamma) * 255.f, 0, 255);
-            mGreen = glm::clamp<int>(glm::pow(color.g, inv_gamma) * 255.f, 0, 255);
-            mBlue = glm::clamp<int>(glm::pow(color.b, inv_gamma) * 255.f, 0, 255);
+            mRed = glm::clamp<int>(glm::pow(mapped.r, inv_gamma) * 255.f, 0, 255);
+            mGreen = glm::clamp<int>(glm::pow(mapped.g, inv_gamma) * 255.f, 0, 255);
+            mBlue = glm::clamp<int>(glm::pow(mapped.b, inv_gamma) * 255.f, 0, 255);
         }
 
         operator glm::vec3() const // 转换到线性空间
@@ -37,6 +45,14 @@ namespace pbrt
                 // end
             };
         }
+
+        static void SetToneMapping(ToneMappingType type, float exposure = 1.f)
+        {
+            mToneMappingType = type;
+            mExposure = glm::max(exposure, 0.f);
+        }
+
+        static ToneMappingType GetToneMapping() { return mToneMappingType; }
 
         // 热力图, 用来dedug, 观察bvh的构建情况
         inline static RGB GenerateHeatMap(float t)
@@ -81,6 +97,28 @@ namespace pbrt
             float idx_f = t * (color_pallet.size() - 1);
             size_t idx = (size_t)glm::floor(idx_f);
             return Lerp(color_pallet[idx], color_pallet[idx + 1], glm::fract(idx_f));
+        }
+
+    private:
+        inline static ToneMappingType mToneMappingType{ToneMappingType::Gamma};
+        inline static float mExposure{1.f};
+
+        inline static glm::vec3 ApplyToneMapping(glm::vec3 color)
+        {
+            color = glm::max(color, glm::vec3(0.f));
+            color *= mExposure;
+
+            if (mToneMappingType == ToneMappingType::Reinhard)
+            {
+                color = color / (color + glm::vec3(1.f));
+            }
+            else if (mToneMappingType == ToneMappingType::ACES)
+            {
+                color = (color * (2.51f * color + 0.03f)) / (color * (2.43f * color + 0.59f) + 0.14f);
+                color = glm::clamp(color, glm::vec3(0.f), glm::vec3(1.f));
+            }
+
+            return glm::clamp(color, glm::vec3(0.f), glm::vec3(1.f));
         }
     };
 
