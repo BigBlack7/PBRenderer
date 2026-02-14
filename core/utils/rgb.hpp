@@ -114,8 +114,12 @@ namespace pbrt
             }
             else if (mToneMappingType == ToneMappingType::ACES)
             {
-                color = (color * (2.51f * color + 0.03f)) / (color * (2.43f * color + 0.59f) + 0.14f);
-                color = glm::clamp(color, glm::vec3(0.f), glm::vec3(1.f));
+                constexpr float aces_a = 2.51f;
+                constexpr float aces_b = 0.03f;
+                constexpr float aces_c = 2.43f;
+                constexpr float aces_d = 0.59f;
+                constexpr float aces_e = 0.14f;
+                color = (color * (aces_a * color + aces_b)) / (color * (aces_c * color + aces_d) + aces_e);
             }
 
             return glm::clamp(color, glm::vec3(0.f), glm::vec3(1.f));
