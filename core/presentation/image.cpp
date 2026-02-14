@@ -10,6 +10,7 @@
 #include <ImfFrameBuffer.h>
 #include <ImfOutputFile.h>
 #include <algorithm>
+#include <cctype>
 #include <fstream>
 // stb(sfml存在IMPLEMENTATION)
 #include <stb_image.h>
@@ -21,7 +22,7 @@ namespace pbrt
     Image::Image(const std::filesystem::path &filename)
     {
         auto ext = filename.extension().string();
-        std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+        std::transform(ext.begin(), ext.end(), ext.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
         if (ext == ".exr")
         {
             LoadEXR(filename);
@@ -44,7 +45,7 @@ namespace pbrt
     void Image::Save(const std::filesystem::path &filename) const
     {
         auto ext = filename.extension().string();
-        std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+        std::transform(ext.begin(), ext.end(), ext.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
         if (ext == ".ppm")
         {
             SavePPM(filename);
