@@ -9,6 +9,7 @@
 #include <ImfInputFile.h>
 #include <ImfFrameBuffer.h>
 #include <ImfOutputFile.h>
+#include <algorithm>
 #include <fstream>
 // stb(sfml存在IMPLEMENTATION)
 #include <stb_image.h>
@@ -29,6 +30,10 @@ namespace pbrt
         {
             LoadHDR(filename);
         }
+        else if (ext == ".png" || ext == ".jpg" || ext == ".jpeg")
+        {
+            LoadLDR(filename);
+        }
         else
         {
             // Unsupported format
@@ -38,15 +43,17 @@ namespace pbrt
 
     void Image::Save(const std::filesystem::path &filename) const
     {
-        if (filename.extension() == ".ppm")
+        auto ext = filename.extension().string();
+        std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+        if (ext == ".ppm")
         {
             SavePPM(filename);
         }
-        else if (filename.extension() == ".exr")
+        else if (ext == ".exr")
         {
             SaveEXR(filename);
         }
-        else if (filename.extension() == ".hdr")
+        else if (ext == ".hdr")
         {
             SaveHDR(filename);
         }
@@ -181,6 +188,36 @@ namespace pbrt
                     data[idx + 0],
                     data[idx + 1],
                     data[idx + 2]);
+            }
+        }
+        stbi_image_free(data);
+    }
+
+    void Image::LoadLDR(const std::filesystem::path &filename)
+    {
+        int width = 0, height = 0, channels = 0;
+        float *data = stbi_loadf(
+            filename.string().c_str(),
+            &width,
+            &height,
+            &channels,
+            3);
+
+        if (!data)
+        {
+            PBRT_ERROR("Failed to load image: {}", filename.string());
+            return;
+        }
+
+        mWidth = static_cast<size_t>(width);
+        mHeight = static_cast<size_t>(height);
+        mPixels.resize(mWidth * mHeight);
+        for (size_t y = 0; y < mHeight; ++y)
+        {
+            for (size_t x = 0; x < mWidth; ++x)
+            {
+                size_t idx = (y * mWidth + x) * 3;
+                mPixels[y * mWidth + x] = glm::vec3(data[idx + 0], data[idx + 1], data[idx + 2]);
             }
         }
         stbi_image_free(data);

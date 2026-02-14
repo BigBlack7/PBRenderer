@@ -5,38 +5,19 @@ namespace pbrt
 {
     glm::vec2 EnvLight::ImagePointFromDirection(const glm::vec3 &direction) const
     {
-        float theta = 0;
-        float phi = 0;
         glm::vec3 normalized_direction = glm::normalize(direction);
-        if (glm::abs(normalized_direction.y) < 0.99999)
+        float theta = glm::degrees(glm::acos(glm::clamp(normalized_direction.y, -1.f, 1.f)));
+        float phi = glm::degrees(glm::atan(normalized_direction.z, normalized_direction.x));
+        if (phi < 0)
         {
-            theta = glm::degrees(glm::acos(normalized_direction.y));
-            float sin_phi = glm::abs(normalized_direction.z / glm::sqrt(1 - normalized_direction.y * normalized_direction.y));
-            phi = glm::degrees(glm::asin(sin_phi));
-            // 判断phi角在xz平面的象限
-            if ((direction.x <= 0) && (direction.z > 0)) // 第二象限
-            {
-                phi = 180 - phi;
-            }
-            else if ((direction.x < 0) && (direction.z <= 0)) // 第三象限
-            {
-                phi = 180 + phi;
-            }
-            else if ((direction.x >= 0) && (direction.z < 0)) // 第四象限
-            {
-                phi = 360 - phi;
-            }
-        }
-        else // 垂直向上或向下
-        {
-            theta = (normalized_direction.y > 0) ? 0 : 180;
+            phi += 360;
         }
 
         // 根据偏置角度调整环境贴图位置
-        phi += mStartPhi;
-        if (phi > 360)
+        phi = glm::mod(phi + mStartPhi, 360.f);
+        if (phi < 0)
         {
-            phi -= 360;
+            phi += 360;
         }
         return glm::vec2{mImage->GetWidth() * phi / 360, mImage->GetHeight() * theta / 180};
     }
@@ -119,7 +100,8 @@ namespace pbrt
         // 将环境贴图上的点映射到方向向量
         glm::vec3 light_direction = DirectionFromImagePoint(image_point);
         // 避免采样到垂直方向, 会使得pdf计算除零异常
-        if (glm::abs(light_direction.y) == 1)
+        float sin_theta = glm::sqrt(glm::max(0.f, 1 - light_direction.y * light_direction.y));
+        if (sin_theta <= 1e-6f)
         {
             return std::nullopt;
         }
@@ -127,7 +109,7 @@ namespace pbrt
             .__lightPoint__ = surface_point + 2 * scene_radius * light_direction,
             .__direction__ = light_direction,
             .__Le__ = mImage->GetPixel(image_point),
-            .__pdf__ = res.__prob__ * mImage->GetHeight() * mImage->GetWidth() / (2 * PI * PI * glm::sqrt(1 - light_direction.y * light_direction.y) * w * h)
+            .__pdf__ = res.__prob__ * mImage->GetHeight() * mImage->GetWidth() / (2 * PI * PI * sin_theta * w * h)
             // end
         };
     }
@@ -145,7 +127,8 @@ namespace pbrt
     float EnvLight::PDF(const glm::vec3 &surface_point, const glm::vec3 &light_point, const glm::vec3 &normal, bool MISC) const
     {
         glm::vec3 light_direction = glm::normalize(light_point - surface_point);
-        if (glm::abs(light_direction.y) == 1)
+        float sin_theta = glm::sqrt(glm::max(0.f, 1 - light_direction.y * light_direction.y));
+        if (sin_theta <= 1e-6f)
         {
             return 0.f;
         }
@@ -154,6 +137,6 @@ namespace pbrt
         float w = glm::min<float>(mGridSize, mImage->GetWidth() - grid_idx.x * mGridSize);
         float h = glm::min<float>(mGridSize, mImage->GetHeight() - grid_idx.y * mGridSize);
         float grid_prob = ((MISC && (!mCompensated)) ? mAliasTableMISC : mAliasTable).GetProbs()[grid_idx.x + grid_idx.y * mGridCount.x];
-        return grid_prob * mImage->GetWidth() * mImage->GetHeight() / (2 * PI * PI * glm::sqrt(1 - light_direction.y * light_direction.y) * w * h);
+        return grid_prob * mImage->GetWidth() * mImage->GetHeight() / (2 * PI * PI * sin_theta * w * h);
     }
 }

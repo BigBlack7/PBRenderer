@@ -17,6 +17,7 @@ namespace pbrt
 
         void LoadEXR(const std::filesystem::path &filename);
         void LoadHDR(const std::filesystem::path &filename);
+        void LoadLDR(const std::filesystem::path &filename);
 
     public:
         Image(const std::filesystem::path &filename);

@@ -3,6 +3,7 @@
 #include <type_traits>
 #include <cassert>
 #include <cstdint>
+#include <utility>
 
 namespace pbrt
 {
@@ -85,13 +86,22 @@ namespace pbrt
         TaggedPointer(uintptr_t ptr, uint8_t tag, bool is_const)
         {
             DEBUG_INFO(assert((ptr & mConstTagMask) == 0))
+            DEBUG_INFO(assert(tag < (uintptr_t(1) << mTagBitNum)))
             mBits = (uintptr_t(is_const) << mConstShift) | (uintptr_t(tag) << mTagShift) | ptr;
         }
         uintptr_t GetPtr() const { return mBits & mPtrMask; }
         uint8_t GetTag() const { return (mBits & mTagMask) >> mTagShift; };
         bool IsConst() const { return (mBits & mConstMask) != 0; }
-        void SetPtr(uintptr_t ptr) { mBits = (mBits & mConstTagMask) | ptr; }
-        void SetTag(uint8_t tag) { mBits = (mBits & mPtrMask) | ((uintptr_t(tag) << mTagShift) & mTagMask); }
+        void SetPtr(uintptr_t ptr)
+        {
+            DEBUG_INFO(assert((ptr & mConstTagMask) == 0))
+            mBits = (mBits & mConstTagMask) | ptr;
+        }
+        void SetTag(uint8_t tag)
+        {
+            DEBUG_INFO(assert(tag < (uintptr_t(1) << mTagBitNum)))
+            mBits = (mBits & mPtrMask) | ((uintptr_t(tag) << mTagShift) & mTagMask);
+        }
         void SetConst(bool is_const) { mBits = (mBits & mTagPtrMask) | (uintptr_t(is_const) << mConstShift); }
 
     private:
@@ -117,6 +127,7 @@ namespace pbrt
         template <typename F, typename T0, typename T1>
         auto Dispatch(F &&func, void *ptr, uint8_t tag)
         {
+            DEBUG_LINE(assert(tag < 2))
             switch (tag)
             {
             case 0:
@@ -129,6 +140,7 @@ namespace pbrt
         template <typename F, typename T0, typename T1, typename T2>
         auto Dispatch(F &&func, void *ptr, uint8_t tag)
         {
+            DEBUG_LINE(assert(tag < 3))
             switch (tag)
             {
             case 0:
@@ -143,6 +155,7 @@ namespace pbrt
         template <typename F, typename T0, typename T1, typename T2, typename T3>
         auto Dispatch(F &&func, void *ptr, uint8_t tag)
         {
+            DEBUG_LINE(assert(tag < 4))
             switch (tag)
             {
             case 0:
@@ -159,6 +172,7 @@ namespace pbrt
         template <typename F, typename T0, typename T1, typename T2, typename T3, typename T4>
         auto Dispatch(F &&func, void *ptr, uint8_t tag)
         {
+            DEBUG_LINE(assert(tag < 5))
             switch (tag)
             {
             case 0:
@@ -183,6 +197,7 @@ namespace pbrt
         template <typename F, typename T0, typename T1>
         auto DispatchConst(F &&func, const void *ptr, uint8_t tag)
         {
+            DEBUG_LINE(assert(tag < 2))
             switch (tag)
             {
             case 0:
@@ -195,6 +210,7 @@ namespace pbrt
         template <typename F, typename T0, typename T1, typename T2>
         auto DispatchConst(F &&func, const void *ptr, uint8_t tag)
         {
+            DEBUG_LINE(assert(tag < 3))
             switch (tag)
             {
             case 0:
@@ -209,6 +225,7 @@ namespace pbrt
         template <typename F, typename T0, typename T1, typename T2, typename T3>
         auto DispatchConst(F &&func, const void *ptr, uint8_t tag)
         {
+            DEBUG_LINE(assert(tag < 4))
             switch (tag)
             {
             case 0:
@@ -225,6 +242,7 @@ namespace pbrt
         template <typename F, typename T0, typename T1, typename T2, typename T3, typename T4>
         auto DispatchConst(F &&func, const void *ptr, uint8_t tag)
         {
+            DEBUG_LINE(assert(tag < 5))
             switch (tag)
             {
             case 0:
