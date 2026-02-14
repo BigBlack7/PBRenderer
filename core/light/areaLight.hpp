@@ -24,5 +24,7 @@ namespace pbrt
         float PDF(const glm::vec3 &surface_point, const glm::vec3 &light_point, const glm::vec3 &normal, bool MISC) const override;
 
         const Shape &GetShape() const { return mShape; }
+        bool IsTwoSides() const { return mIsTwoSides; }
+        glm::vec3 GetLe() const { return mLe; }
     };
 }

@@ -21,13 +21,12 @@
 - Microfacet Theory
 - PTRenderer
 - MIS
+- BDPT
 - SFML Window
 - Easy Threadpool
 - Logger
 
 # Todo
-
-- BDPT
 - VPT
 - SSS
 - Medium

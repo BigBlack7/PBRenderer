@@ -15,6 +15,7 @@ namespace pbrt
         LightSampler __lightSamplerMISC__;
         std::vector<const Light *> __infiniteLights__;
         float __radius__;
+        glm::vec3 __center__{};
 
     public:
         void AddShape(
@@ -51,6 +52,7 @@ namespace pbrt
         {
             __sceneBVH__.Build(std::move(__shapeBVHInfos__));
             auto scene_bounds = __sceneBVH__.GetBounds();
+            __center__ = 0.5f * (scene_bounds.__bMax__ + scene_bounds.__bMin__);
             __radius__ = 0.5f * glm::distance(scene_bounds.__bMax__, scene_bounds.__bMin__);
             __lightSampler__.Build(__radius__);
             __lightSamplerMISC__.Build(__radius__);
@@ -59,6 +61,7 @@ namespace pbrt
         const LightSampler &GetLightSampler(bool MISC) const { return MISC ? __lightSamplerMISC__ : __lightSampler__; }
 
         float GetRadius() const { return __radius__; }
+        glm::vec3 GetCenter() const { return __center__; }
 
         const std::vector<const Light *> &GetInfiniteLights() const { return __infiniteLights__; }
     };
