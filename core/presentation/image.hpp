@@ -16,7 +16,7 @@ namespace pbrt
         void SaveHDR(const std::filesystem::path &filename) const;
 
         void LoadEXR(const std::filesystem::path &filename);
-        void LoadHDR(const std::filesystem::path &filename);
+        void LoadTexture(const std::filesystem::path &filename);
 
     public:
         Image(const std::filesystem::path &filename);
@@ -33,7 +33,7 @@ namespace pbrt
         size_t GetWidth() const { return mWidth; }
         size_t GetHeight() const { return mHeight; }
         glm::ivec2 GetResolution() const { return {mWidth, mHeight}; }
-        
+
         void Save(const std::filesystem::path &filename) const;
     };
 }

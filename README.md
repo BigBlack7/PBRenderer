@@ -19,19 +19,19 @@
 - AreaLight & EnvLight
 - Conductor & Dielectric
 - Microfacet Theory
+- BDPTRenderer
 - PTRenderer
 - MIS
+- Tone Mapping
 - SFML Window
 - Easy Threadpool
 - Logger
 
 # Todo
 
-- BDPT
 - VPT
 - SSS
 - Medium
-- Tone Mapping
 - Sobol Sampler
 - Spectrum
 - Scene Parser

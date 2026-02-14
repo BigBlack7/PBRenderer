@@ -5,6 +5,16 @@ namespace pbrt
 {
     glm::vec2 EnvLight::ImagePointFromDirection(const glm::vec3 &direction) const
     {
+        /*  象限判断方法:
+             1. 计算θ角: θ = acos(y), 范围为[0, 180]度
+             2. 计算φ角: φ = asin(z / sin(θ)), 范围为[-90, 90]度
+             3. 根据x和z的符号判断φ所在的象限:
+                - 第一象限(x > 0, z > 0): φ保持不变
+                - 第二象限(x <= 0, z > 0): φ = 180 - φ
+                - 第三象限(x < 0, z <= 0): φ = 180 + φ
+                - 第四象限(x >= 0, z < 0): φ = 360 - φ
+            当y接近±1时, sin(θ)接近0, 可能导致数值不稳定, 需要特殊处理
+        */
         float theta = 0;
         float phi = 0;
         glm::vec3 normalized_direction = glm::normalize(direction);
@@ -84,7 +94,7 @@ namespace pbrt
         float average_phi = mPrecomputePhi / (mGridCount.x * mGridCount.y); // 每个网格的平均光功率
         mPrecomputePhi *= 2 * PI * PI / mImage->GetWidth();                 // 预计算光功率φ系数
         mAliasTable.Build(grids_phi);
-        // 仅关注大功率网格
+        // 提高对高亮度小区域的采样概率
         mCompensated = true;
         for (float &grid_phi : grids_phi)
         {

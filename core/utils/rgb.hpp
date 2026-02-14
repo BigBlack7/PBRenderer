@@ -11,20 +11,56 @@ namespace pbrt
         [0.0, 1.0]         γ=2.2幂函数          [0.0, 1.0]
         线性渐变           编码压缩             sRGB显示空间
     */
+
+    enum class ToneMappingType
+    {
+        Gamma,
+        Reinhard,
+        ACES
+    };
+
     class RGB
     {
+    private:
+        inline static ToneMappingType mToneMappingType{ToneMappingType::Gamma};
+        inline static float mExposure{1.f};
+
     public:
         int mRed, mGreen, mBlue; // 8位颜色分量 [0, 255]
+
+    private:
+        inline static glm::vec3 ApplyToneMapping(glm::vec3 color)
+        {
+            color = glm::max(color, glm::vec3(0.f));
+            color *= mExposure;
+
+            if (mToneMappingType == ToneMappingType::Reinhard)
+            {
+                color = color / (color + glm::vec3(1.f));
+            }
+            else if (mToneMappingType == ToneMappingType::ACES)
+            {
+                constexpr float aces_a = 2.51f;
+                constexpr float aces_b = 0.03f;
+                constexpr float aces_c = 2.43f;
+                constexpr float aces_d = 0.59f;
+                constexpr float aces_e = 0.14f;
+                color = (color * (aces_a * color + aces_b)) / (color * (aces_c * color + aces_d) + aces_e);
+            }
+
+            return glm::clamp(color, glm::vec3(0.f), glm::vec3(1.f));
+        }
 
     public:
         RGB(int red, int green, int blue) : mRed(red), mGreen(green), mBlue(blue) {}
 
         RGB(const glm::vec3 &color) // 转换到sRGB空间
         {
+            glm::vec3 mapped = ApplyToneMapping(color);
             float inv_gamma = 1.f / 2.2f;
-            mRed = glm::clamp<int>(glm::pow(color.r, inv_gamma) * 255.f, 0, 255);
-            mGreen = glm::clamp<int>(glm::pow(color.g, inv_gamma) * 255.f, 0, 255);
-            mBlue = glm::clamp<int>(glm::pow(color.b, inv_gamma) * 255.f, 0, 255);
+            mRed = glm::clamp<int>(glm::pow(mapped.r, inv_gamma) * 255.f, 0, 255);
+            mGreen = glm::clamp<int>(glm::pow(mapped.g, inv_gamma) * 255.f, 0, 255);
+            mBlue = glm::clamp<int>(glm::pow(mapped.b, inv_gamma) * 255.f, 0, 255);
         }
 
         operator glm::vec3() const // 转换到线性空间
@@ -37,6 +73,15 @@ namespace pbrt
                 // end
             };
         }
+
+        // 初始化pbrt::RGB::SetToneMapping(pbrt::ToneMappingType::ACES, 1.f);
+        static void SetToneMapping(ToneMappingType type, float exposure = 1.f)
+        {
+            mToneMappingType = type;
+            mExposure = glm::max(exposure, 0.f);
+        }
+
+        static ToneMappingType GetToneMapping() { return mToneMappingType; }
 
         // 热力图, 用来dedug, 观察bvh的构建情况
         inline static RGB GenerateHeatMap(float t)

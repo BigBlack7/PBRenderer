@@ -25,9 +25,9 @@ namespace pbrt
         {
             LoadEXR(filename);
         }
-        else if (ext == ".hdr")
+        else if (ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".hdr")
         {
-            LoadHDR(filename);
+            LoadTexture(filename);
         }
         else
         {
@@ -38,15 +38,17 @@ namespace pbrt
 
     void Image::Save(const std::filesystem::path &filename) const
     {
-        if (filename.extension() == ".ppm")
+        auto ext = filename.extension().string();
+        std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+        if (ext == ".ppm")
         {
             SavePPM(filename);
         }
-        else if (filename.extension() == ".exr")
+        else if (ext == ".exr")
         {
             SaveEXR(filename);
         }
-        else if (filename.extension() == ".hdr")
+        else if (ext == ".hdr")
         {
             SaveHDR(filename);
         }
@@ -149,7 +151,7 @@ namespace pbrt
         file.readPixels(data_window.min.y, data_window.max.y);
     }
 
-    void Image::LoadHDR(const std::filesystem::path &filename)
+    void Image::LoadTexture(const std::filesystem::path &filename)
     {
         int width = 0, height = 0, channels = 0;
 
@@ -163,7 +165,7 @@ namespace pbrt
 
         if (!data)
         {
-            PBRT_ERROR("Failed to load HDR image: {}", filename.string());
+            PBRT_ERROR("Failed to load HDR or LDR image: {}", filename.string());
             return;
         }
 
