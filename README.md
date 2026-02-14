@@ -21,7 +21,7 @@
 - Microfacet Theory
 - PTRenderer
 - MIS
-- BDPT
+- BDPT (currently aliased to MIS)
 - SFML Window
 - Easy Threadpool
 - Logger
