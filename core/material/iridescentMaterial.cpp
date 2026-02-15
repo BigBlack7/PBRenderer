@@ -22,6 +22,11 @@ namespace pbrt
         return 0.5f * (colS + colP);
     }
 
+    static float Luminance(const glm::vec3 &c)
+    {
+        return glm::dot(c, glm::vec3(0.2126f, 0.7152f, 0.0722f));
+    }
+
     void IridescentMaterial::FresnelDielectric(float cos_theta1, float n1, float n2, glm::vec2 &R, glm::vec2 &phi) const
     {
         float sin2_theta1 = 1.f - cos_theta1 * cos_theta1;
@@ -137,7 +142,7 @@ namespace pbrt
 
         // Convert back to RGB reflectance
         I = glm::clamp(XYZ_TO_RGB * I, glm::vec3(0.f), glm::vec3(1.f));
-        return (mKappa3 < 0.01f) ? I * mBaseColor : I;
+        return I;
     }
 
     std::optional<BSDFInfo> IridescentMaterial::SampleBSDF(const glm::vec3 &hit_point, const glm::vec3 &view_dir, const RNG &rng) const
@@ -160,18 +165,61 @@ namespace pbrt
         // Compute iridescent color
         glm::vec3 iridescent_color = ComputeIridescence(cos_theta1, cos_theta2);
 
+        bool dielectric_base = mKappa3 < 0.01f;
+        float reflect_prob = glm::clamp(Luminance(iridescent_color), 0.f, 1.f);
+
         if (mMicrofacet.IsDeltaDistribution())
         {
-            return BSDFInfo{iridescent_color / glm::abs(light_dir.y), 1.f, light_dir};
+            if (!dielectric_base || rng.Uniform() <= reflect_prob)
+            {
+                float pdf = dielectric_base ? reflect_prob : 1.f;
+                return BSDFInfo{iridescent_color / glm::abs(light_dir.y), pdf, light_dir};
+            }
+            return BSDFInfo{
+                (glm::vec3(1.f) - iridescent_color) * mBaseColor / glm::abs(view_dir.y),
+                1.f - reflect_prob,
+                -view_dir};
         }
 
         // Microfacet BRDF formula
         float D = mMicrofacet.D(microfacet_normal);
         float G = mMicrofacet.G2(light_dir, view_dir, microfacet_normal);
-        glm::vec3 bsdf = iridescent_color * D * G / glm::abs(4.f * light_dir.y * view_dir.y);
-        float pdf = mMicrofacet.VisibleNormalDistribution(view_dir, microfacet_normal) / glm::abs(4.0f * glm::dot(view_dir, microfacet_normal));
+        glm::vec3 brdf = iridescent_color * D * G / glm::abs(4.f * light_dir.y * view_dir.y);
+        float reflect_pdf = mMicrofacet.VisibleNormalDistribution(view_dir, microfacet_normal) / glm::abs(4.0f * glm::dot(view_dir, microfacet_normal));
 
-        return BSDFInfo{bsdf, pdf, light_dir};
+        if (!dielectric_base || rng.Uniform() <= reflect_prob)
+        {
+            float pdf = dielectric_base ? reflect_prob * reflect_pdf : reflect_pdf;
+            return BSDFInfo{brdf, pdf, light_dir};
+        }
+
+        float eta = mEta3;
+        float cos_theta_t = view_dir.y;
+        float inverse = 1.f;
+        if (cos_theta_t < 0.f)
+        {
+            eta = 1.f / mEta3;
+            inverse = -1.f;
+            cos_theta_t = -cos_theta_t;
+        }
+        float sin2_theta_t = 1.f - cos_theta_t * cos_theta_t;
+        float sin2_theta_i = sin2_theta_t / (eta * eta);
+        if (sin2_theta_i >= 1.f)
+        {
+            return BSDFInfo{brdf, reflect_pdf, light_dir};
+        }
+        float cos_theta_i = std::sqrt(1.f - sin2_theta_i);
+        glm::vec3 trans_dir = (-view_dir / eta) + (cos_theta_t / eta - cos_theta_i) * microfacet_normal * inverse;
+        float det_den = glm::abs(glm::dot(view_dir, microfacet_normal)) - eta * eta * glm::abs(glm::dot(trans_dir, microfacet_normal));
+        if (glm::abs(det_den) < 1e-6f)
+        {
+            return std::nullopt;
+        }
+        float det_J = eta * eta * glm::abs(glm::dot(trans_dir, microfacet_normal)) / (det_den * det_den);
+        glm::vec3 btdf = (glm::vec3(1.f) - iridescent_color) * mBaseColor * det_J * D * G * glm::abs(glm::dot(view_dir, microfacet_normal) / (trans_dir.y * view_dir.y));
+        float pdf = (1.f - reflect_prob) * mMicrofacet.VisibleNormalDistribution(view_dir, microfacet_normal) * det_J;
+
+        return BSDFInfo{btdf / (eta * eta), pdf, trans_dir};
     }
 
     glm::vec3 IridescentMaterial::BSDF(const glm::vec3 &hit_point, const glm::vec3 &light_dir, const glm::vec3 &view_dir) const
@@ -182,32 +230,69 @@ namespace pbrt
         }
 
         float lv = light_dir.y * view_dir.y;
-        if (lv <= 0.f)
+        bool dielectric_base = mKappa3 < 0.01f;
+        if (lv <= 0.f && !dielectric_base)
         {
             return {};
         }
 
-        glm::vec3 microfacet_normal = glm::normalize(light_dir + view_dir);
-        if (microfacet_normal.y <= 0.f)
+        if (lv > 0.f)
         {
-            microfacet_normal = -microfacet_normal;
+            glm::vec3 microfacet_normal = glm::normalize(light_dir + view_dir);
+            if (microfacet_normal.y <= 0.f)
+            {
+                microfacet_normal = -microfacet_normal;
+            }
+
+            // Compute angles for thin-film interference
+            float cos_theta1 = glm::abs(glm::dot(view_dir, microfacet_normal));
+            float eta_2 = glm::mix(1.f, mEta2, glm::smoothstep(0.f, 0.03f, mDinc));
+            float sin2_theta1 = 1.f - cos_theta1 * cos_theta1;
+            float cos_theta2 = std::sqrt(glm::max(0.f, 1.f - (1.f / (eta_2 * eta_2)) * sin2_theta1));
+
+            // Compute iridescent color
+            glm::vec3 iridescent_color = ComputeIridescence(cos_theta1, cos_theta2);
+
+            // Microfacet BRDF formula
+            float D = mMicrofacet.D(microfacet_normal);
+            float G = mMicrofacet.G2(light_dir, view_dir, microfacet_normal);
+            glm::vec3 brdf = iridescent_color * D * G / glm::abs(4.f * lv);
+
+            return brdf;
         }
 
-        // Compute angles for thin-film interference
+        float eta = mEta3;
+        float cos_theta_t = glm::abs(view_dir.y);
+        float inverse = view_dir.y < 0.f ? -1.f : 1.f;
+        if (view_dir.y < 0.f)
+        {
+            eta = 1.f / mEta3;
+        }
+        float sin2_theta_t = 1.f - cos_theta_t * cos_theta_t;
+        float sin2_theta_i = sin2_theta_t / (eta * eta);
+        if (sin2_theta_i >= 1.f)
+        {
+            return {};
+        }
+        float cos_theta_i = std::sqrt(1.f - sin2_theta_i);
+        glm::vec3 microfacet_normal = (light_dir + view_dir / eta) * inverse / (cos_theta_t / eta - cos_theta_i);
+
         float cos_theta1 = glm::abs(glm::dot(view_dir, microfacet_normal));
         float eta_2 = glm::mix(1.f, mEta2, glm::smoothstep(0.f, 0.03f, mDinc));
         float sin2_theta1 = 1.f - cos_theta1 * cos_theta1;
         float cos_theta2 = std::sqrt(glm::max(0.f, 1.f - (1.f / (eta_2 * eta_2)) * sin2_theta1));
-
-        // Compute iridescent color
         glm::vec3 iridescent_color = ComputeIridescence(cos_theta1, cos_theta2);
 
-        // Microfacet BRDF formula
         float D = mMicrofacet.D(microfacet_normal);
         float G = mMicrofacet.G2(light_dir, view_dir, microfacet_normal);
-        glm::vec3 bsdf = iridescent_color * D * G / glm::abs(4.f * lv);
-
-        return bsdf;
+        float det_den = glm::abs(glm::dot(view_dir, microfacet_normal)) - eta * eta * glm::abs(glm::dot(light_dir, microfacet_normal));
+        if (glm::abs(det_den) < 1e-6f)
+        {
+            return {};
+        }
+        float det_J = eta * eta * glm::abs(glm::dot(light_dir, microfacet_normal)) / (det_den * det_den);
+        glm::vec3 btdf = (glm::vec3(1.f) - iridescent_color) * mBaseColor * det_J * D * G * glm::abs(glm::dot(view_dir, microfacet_normal) / lv);
+        return btdf / (eta * eta);
     }
 
     float IridescentMaterial::PDF(const glm::vec3 &hit_point, const glm::vec3 &light_dir, const glm::vec3 &view_dir) const
@@ -218,18 +303,58 @@ namespace pbrt
         }
 
         float lv = light_dir.y * view_dir.y;
-        if (lv <= 0.f)
+        bool dielectric_base = mKappa3 < 0.01f;
+        if (lv <= 0.f && !dielectric_base)
         {
             return 0.f;
         }
 
-        glm::vec3 microfacet_normal = glm::normalize(light_dir + view_dir);
-        if (microfacet_normal.y <= 0.f)
+        if (lv > 0.f)
         {
-            microfacet_normal = -microfacet_normal;
+            glm::vec3 microfacet_normal = glm::normalize(light_dir + view_dir);
+            if (microfacet_normal.y <= 0.f)
+            {
+                microfacet_normal = -microfacet_normal;
+            }
+
+            float cos_theta1 = glm::abs(glm::dot(view_dir, microfacet_normal));
+            float eta_2 = glm::mix(1.f, mEta2, glm::smoothstep(0.f, 0.03f, mDinc));
+            float sin2_theta1 = 1.f - cos_theta1 * cos_theta1;
+            float cos_theta2 = std::sqrt(glm::max(0.f, 1.f - (1.f / (eta_2 * eta_2)) * sin2_theta1));
+            glm::vec3 iridescent_color = ComputeIridescence(cos_theta1, cos_theta2);
+            float reflect_prob = glm::clamp(Luminance(iridescent_color), 0.f, 1.f);
+            return dielectric_base ? reflect_prob * mMicrofacet.VisibleNormalDistribution(view_dir, microfacet_normal) / glm::abs(4.f * glm::dot(view_dir, microfacet_normal))
+                                   : mMicrofacet.VisibleNormalDistribution(view_dir, microfacet_normal) / glm::abs(4.f * glm::dot(view_dir, microfacet_normal));
         }
 
-        return mMicrofacet.VisibleNormalDistribution(view_dir, microfacet_normal) / glm::abs(4.f * glm::dot(view_dir, microfacet_normal));
+        float eta = mEta3;
+        float cos_theta_t = glm::abs(view_dir.y);
+        float inverse = view_dir.y < 0.f ? -1.f : 1.f;
+        if (view_dir.y < 0.f)
+        {
+            eta = 1.f / mEta3;
+        }
+        float sin2_theta_t = 1.f - cos_theta_t * cos_theta_t;
+        float sin2_theta_i = sin2_theta_t / (eta * eta);
+        if (sin2_theta_i >= 1.f)
+        {
+            return 0.f;
+        }
+        float cos_theta_i = std::sqrt(1.f - sin2_theta_i);
+        glm::vec3 microfacet_normal = (light_dir + view_dir / eta) * inverse / (cos_theta_t / eta - cos_theta_i);
+        float cos_theta1 = glm::abs(glm::dot(view_dir, microfacet_normal));
+        float eta_2 = glm::mix(1.f, mEta2, glm::smoothstep(0.f, 0.03f, mDinc));
+        float sin2_theta1 = 1.f - cos_theta1 * cos_theta1;
+        float cos_theta2 = std::sqrt(glm::max(0.f, 1.f - (1.f / (eta_2 * eta_2)) * sin2_theta1));
+        glm::vec3 iridescent_color = ComputeIridescence(cos_theta1, cos_theta2);
+        float reflect_prob = glm::clamp(Luminance(iridescent_color), 0.f, 1.f);
+        float det_den = glm::abs(glm::dot(view_dir, microfacet_normal)) - eta * eta * glm::abs(glm::dot(light_dir, microfacet_normal));
+        if (glm::abs(det_den) < 1e-6f)
+        {
+            return 0.f;
+        }
+        float det_J = eta * eta * glm::abs(glm::dot(light_dir, microfacet_normal)) / (det_den * det_den);
+        return (1.f - reflect_prob) * mMicrofacet.VisibleNormalDistribution(view_dir, microfacet_normal) * det_J;
     }
 
     void IridescentMaterial::Regularize() const
