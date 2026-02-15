@@ -16,7 +16,8 @@ namespace pbrt
     {
         Gamma,
         Reinhard,
-        ACES
+        ACES,
+        Uncharted2
     };
 
     class RGB
@@ -46,6 +47,24 @@ namespace pbrt
                 constexpr float aces_d = 0.59f;
                 constexpr float aces_e = 0.14f;
                 color = (color * (aces_a * color + aces_b)) / (color * (aces_c * color + aces_d) + aces_e);
+            }
+            else if (mToneMappingType == ToneMappingType::Uncharted2)
+            {
+                constexpr float A = 0.15f;
+                constexpr float B = 0.50f;
+                constexpr float C = 0.10f;
+                constexpr float D = 0.20f;
+                constexpr float E = 0.02f;
+                constexpr float F = 0.30f;
+
+                auto uncharted2 = [&](const glm::vec3 &x)
+                {
+                    return ((x * (A * x + C * B) + D * E) / (x * (A * x + B) + D * F)) - E / F;
+                };
+
+                constexpr float white_point = 11.2f;
+                float white_scale = 1.f / (((white_point * (A * white_point + C * B) + D * E) / (white_point * (A * white_point + B) + D * F)) - E / F);
+                color = uncharted2(color) * white_scale;
             }
 
             return glm::clamp(color, glm::vec3(0.f), glm::vec3(1.f));

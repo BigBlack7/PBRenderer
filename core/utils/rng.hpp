@@ -67,19 +67,10 @@ namespace pbrt
         // 生成严格的 [0,1) 浮点随机数
         float Uniform() const
         {
-            // 取 32-bit 整数
+            // 映射到开区间(0,1), 避免极端值导致采样分布在奇异点爆炸
             uint32_t x = mGen();
-
-            // 映射到[0,1): 使用2^-32, 确保永远小于1
-            // 使用double可减少float舍入造成的条纹/偏差风险
             constexpr double INV_2_POW_32 = 1. / 4294967296.; // 1 / 2^32
-            double u = static_cast<double>(x) * INV_2_POW_32; // u∈[0,1)
-            float uf = static_cast<float>(u);
-
-            // 避免由于某些平台的奇怪fast-math导致uf==1
-            // nextafterf(1,0)∈[0,1), 是1的前一个float
-            uf = std::min(uf, std::nextafterf(1.f, 0.f));
-            return uf;
+            return static_cast<float>((static_cast<double>(x) + 0.5) * INV_2_POW_32);
         }
     };
 }

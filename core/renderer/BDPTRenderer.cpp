@@ -36,17 +36,7 @@ namespace pbrt
             return false;
         }
 
-        struct SampledDirection
-        {
-        public:
-            glm::vec3 direction_world{};
-            glm::vec3 bsdf{};
-            float pdf{0.f};
-            float cos_theta{0.f};
-            float eta_scale{1.f};
-        };
-
-        inline std::optional<SampledDirection> SampleDirection(const HitInfo &hit_info, const glm::vec3 &incoming_world, const RNG &rng)
+        inline std::optional<BSDFInfo> SampleDirection(const HitInfo &hit_info, const glm::vec3 &incoming_world, const RNG &rng)
         {
             Frame frame(hit_info.__normal__);
             glm::vec3 view_dir = frame.LocalFromWorld(incoming_world);
@@ -60,12 +50,8 @@ namespace pbrt
                 return std::nullopt;
             }
 
-            return SampledDirection{
-                .direction_world = frame.WorldFromLocal(bsdf_info->__lightDirection__),
-                .bsdf = bsdf_info->__bsdf__,
-                .pdf = bsdf_info->__pdf__,
-                .cos_theta = glm::abs(bsdf_info->__lightDirection__.y),
-                .eta_scale = bsdf_info->__etaScale__};
+            bsdf_info->__lightDirection__ = frame.WorldFromLocal(bsdf_info->__lightDirection__);
+            return bsdf_info;
         }
 
         struct PathVertex
@@ -83,8 +69,6 @@ namespace pbrt
 
     glm::vec3 BDPTRenderer::RenderPixel(const glm::ivec3 &pixel_coord)
     {
-        constexpr int MAX_DEPTH = 64;
-
         thread_local RNG rng{};
         size_t seed = static_cast<size_t>(pixel_coord.x) * 73856093ull ^
                       static_cast<size_t>(pixel_coord.y) * 19349663ull ^
@@ -94,7 +78,7 @@ namespace pbrt
 
         // ---------------------------------------------------------------------
         // Generate light sub-path
-        auto generateLightSubPath = [&](int max_depth) -> std::vector<bdpt::PathVertex>
+        auto generateLightSubPath = [&]() -> std::vector<bdpt::PathVertex>
         {
             std::vector<bdpt::PathVertex> vertices;
             const LightSampler &light_sampler = mScene.GetLightSampler(false);
@@ -179,7 +163,7 @@ namespace pbrt
             float current_pdf_accum = pdf_accum;
             float eta_scale = 1.f;
 
-            for (int depth = 0; depth < max_depth; depth++)
+            for (int depth = 0;; depth++)
             {
                 auto hit_info = mScene.Intersect(ray);
                 if (!hit_info.has_value() || !(hit_info->__material__))
@@ -208,13 +192,18 @@ namespace pbrt
                 {
                     break;
                 }
+                if (sampled->__pdf__ <= 0.f)
+                {
+                    break;
+                }
 
-                current_pdf_accum *= sampled->pdf;
-                eta_scale *= sampled->eta_scale;
-                current_beta *= sampled->bsdf * sampled->cos_theta / sampled->pdf;
+                float cos_theta = glm::abs(glm::dot(sampled->__lightDirection__, hit_info->__normal__));
+                current_pdf_accum *= sampled->__pdf__;
+                eta_scale *= sampled->__etaScale__;
+                current_beta *= sampled->__bsdf__ * cos_theta / sampled->__pdf__;
 
                 ray.__origin__ = hit_info->__hitPoint__;
-                ray.__direction__ = sampled->direction_world;
+                ray.__direction__ = sampled->__lightDirection__;
             }
 
             return vertices;
@@ -222,7 +211,7 @@ namespace pbrt
 
         // ---------------------------------------------------------------------
         // Generate camera sub-path
-        auto generateCameraSubPath = [&](int max_depth, glm::vec3 &radiance) -> std::vector<bdpt::PathVertex>
+        auto generateCameraSubPath = [&](glm::vec3 &radiance) -> std::vector<bdpt::PathVertex>
         {
             std::vector<bdpt::PathVertex> vertices;
             glm::vec3 beta{1.f};
@@ -231,7 +220,7 @@ namespace pbrt
 
             Ray ray = mCamera.GenerateRay({pixel_coord.x, pixel_coord.y}, {rng.Uniform(), rng.Uniform()});
 
-            for (int depth = 0; depth < max_depth; depth++)
+            for (int depth = 0;; depth++)
             {
                 auto hit_info = mScene.Intersect(ray);
                 if (!hit_info.has_value())
@@ -276,21 +265,26 @@ namespace pbrt
                 {
                     break;
                 }
+                if (sampled->__pdf__ <= 0.f)
+                {
+                    break;
+                }
 
-                pdf_accum *= sampled->pdf;
-                eta_scale *= sampled->eta_scale;
-                beta *= sampled->bsdf * sampled->cos_theta / sampled->pdf;
+                float cos_theta = glm::abs(glm::dot(sampled->__lightDirection__, hit_info->__normal__));
+                pdf_accum *= sampled->__pdf__;
+                eta_scale *= sampled->__etaScale__;
+                beta *= sampled->__bsdf__ * cos_theta / sampled->__pdf__;
 
                 ray.__origin__ = hit_info->__hitPoint__;
-                ray.__direction__ = sampled->direction_world;
+                ray.__direction__ = sampled->__lightDirection__;
             }
 
             return vertices;
         };
 
         glm::vec3 radiance{0.f, 0.f, 0.f};
-        auto light_vertices = generateLightSubPath(MAX_DEPTH);
-        auto camera_vertices = generateCameraSubPath(MAX_DEPTH, radiance);
+        auto light_vertices = generateLightSubPath();
+        auto camera_vertices = generateCameraSubPath(radiance);
 
         // ---------------------------------------------------------------------
         // Connect sub-paths

@@ -142,6 +142,11 @@ namespace pbrt
 
     std::optional<BSDFInfo> IridescentMaterial::SampleBSDF(const glm::vec3 &hit_point, const glm::vec3 &view_dir, const RNG &rng) const
     {
+        if (view_dir.y == 0.f)
+        {
+            return std::nullopt;
+        }
+
         glm::vec3 microfacet_normal(0.f, 1.f, 0.f);
         if (!mMicrofacet.IsDeltaDistribution())
         {
@@ -159,28 +164,31 @@ namespace pbrt
 
         // Compute iridescent color
         glm::vec3 iridescent_color = ComputeIridescence(cos_theta1, cos_theta2);
+        float coat_weight = glm::clamp(glm::max(iridescent_color.r, glm::max(iridescent_color.g, iridescent_color.b)), 0.02f, 0.98f);
 
-        if (mMicrofacet.IsDeltaDistribution())
+        if (rng.Uniform() < coat_weight)
         {
-            return BSDFInfo{iridescent_color / glm::abs(light_dir.y), 1.f, light_dir};
+            if (mMicrofacet.IsDeltaDistribution())
+            {
+                return BSDFInfo{iridescent_color / glm::abs(light_dir.y), coat_weight, light_dir};
+            }
+
+            // Microfacet BRDF formula
+            float D = mMicrofacet.D(microfacet_normal);
+            float G = mMicrofacet.G2(light_dir, view_dir, microfacet_normal);
+            glm::vec3 bsdf = iridescent_color * D * G / glm::abs(4.f * light_dir.y * view_dir.y);
+            float pdf = coat_weight * mMicrofacet.VisibleNormalDistribution(view_dir, microfacet_normal) / glm::abs(4.0f * glm::dot(view_dir, microfacet_normal));
+            return BSDFInfo{bsdf, pdf, light_dir};
         }
 
-        // Microfacet BRDF formula
-        float D = mMicrofacet.D(microfacet_normal);
-        float G = mMicrofacet.G2(light_dir, view_dir, microfacet_normal);
-        glm::vec3 bsdf = iridescent_color * D * G / glm::abs(4.f * light_dir.y * view_dir.y);
-        float pdf = mMicrofacet.VisibleNormalDistribution(view_dir, microfacet_normal) / glm::abs(4.0f * glm::dot(view_dir, microfacet_normal));
-
-        return BSDFInfo{bsdf, pdf, light_dir};
+        glm::vec3 diffuse_light_dir = CosineSampleHemisphere({rng.Uniform(), rng.Uniform()}) * glm::sign(view_dir.y);
+        float pdf = (1.f - coat_weight) * CosineSampleHemispherePDF(diffuse_light_dir * glm::sign(view_dir.y));
+        glm::vec3 bsdf = (1.f - coat_weight) * mBaseColor * INV_PI;
+        return BSDFInfo{bsdf, pdf, diffuse_light_dir};
     }
 
     glm::vec3 IridescentMaterial::BSDF(const glm::vec3 &hit_point, const glm::vec3 &light_dir, const glm::vec3 &view_dir) const
     {
-        if (mMicrofacet.IsDeltaDistribution())
-        {
-            return {};
-        }
-
         float lv = light_dir.y * view_dir.y;
         if (lv <= 0.f)
         {
@@ -201,22 +209,19 @@ namespace pbrt
 
         // Compute iridescent color
         glm::vec3 iridescent_color = ComputeIridescence(cos_theta1, cos_theta2);
+        float coat_weight = glm::clamp(glm::max(iridescent_color.r, glm::max(iridescent_color.g, iridescent_color.b)), 0.02f, 0.98f);
 
         // Microfacet BRDF formula
         float D = mMicrofacet.D(microfacet_normal);
         float G = mMicrofacet.G2(light_dir, view_dir, microfacet_normal);
-        glm::vec3 bsdf = iridescent_color * D * G / glm::abs(4.f * lv);
+        glm::vec3 coat_bsdf = iridescent_color * D * G / glm::abs(4.f * lv);
+        glm::vec3 base_bsdf = (1.f - coat_weight) * mBaseColor * INV_PI;
 
-        return bsdf;
+        return coat_bsdf + base_bsdf;
     }
 
     float IridescentMaterial::PDF(const glm::vec3 &hit_point, const glm::vec3 &light_dir, const glm::vec3 &view_dir) const
     {
-        if (mMicrofacet.IsDeltaDistribution())
-        {
-            return 0.f;
-        }
-
         float lv = light_dir.y * view_dir.y;
         if (lv <= 0.f)
         {
@@ -229,7 +234,16 @@ namespace pbrt
             microfacet_normal = -microfacet_normal;
         }
 
-        return mMicrofacet.VisibleNormalDistribution(view_dir, microfacet_normal) / glm::abs(4.f * glm::dot(view_dir, microfacet_normal));
+        float cos_theta1 = glm::abs(glm::dot(view_dir, microfacet_normal));
+        float eta_2 = glm::mix(1.f, mEta2, glm::smoothstep(0.f, 0.03f, mDinc));
+        float sin2_theta1 = 1.f - cos_theta1 * cos_theta1;
+        float cos_theta2 = std::sqrt(glm::max(0.f, 1.f - (1.f / (eta_2 * eta_2)) * sin2_theta1));
+        glm::vec3 iridescent_color = ComputeIridescence(cos_theta1, cos_theta2);
+        float coat_weight = glm::clamp(glm::max(iridescent_color.r, glm::max(iridescent_color.g, iridescent_color.b)), 0.02f, 0.98f);
+
+        float coat_pdf = mMicrofacet.VisibleNormalDistribution(view_dir, microfacet_normal) / glm::abs(4.f * glm::dot(view_dir, microfacet_normal));
+        float diffuse_pdf = CosineSampleHemispherePDF(light_dir * glm::sign(view_dir.y));
+        return coat_weight * coat_pdf + (1.f - coat_weight) * diffuse_pdf;
     }
 
     void IridescentMaterial::Regularize() const
