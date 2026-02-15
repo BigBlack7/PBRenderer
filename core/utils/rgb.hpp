@@ -63,7 +63,7 @@ namespace pbrt
                 };
 
                 constexpr float white_point = 11.2f;
-                float white_scale = 1.f / (((white_point * (A * white_point + C * B) + D * E) / (white_point * (A * white_point + B) + D * F)) - E / F);
+                float white_scale = 1.f / uncharted2(glm::vec3(white_point)).r;
                 color = uncharted2(color) * white_scale;
             }
 
