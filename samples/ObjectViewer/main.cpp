@@ -4,7 +4,6 @@
 #include <material/conductorMaterial.hpp>
 #include <material/groundMaterial.hpp>
 #include <material/dielectricMaterial.hpp>
-#include <material/iridescentMaterial.hpp>
 #include <presentation/film.hpp>
 #include <presentation/camera.hpp>
 #include <presentation/previewer.hpp>

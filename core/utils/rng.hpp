@@ -64,21 +64,19 @@ namespace pbrt
                 (void)mGen();
         }
 
-        // 生成严格的 [0,1) 浮点随机数
+        // 生成稳定的 (0,1) 浮点随机数, 避免端点带来的极端采样
         float Uniform() const
         {
             // 取 32-bit 整数
             uint32_t x = mGen();
 
-            // 映射到[0,1): 使用2^-32, 确保永远小于1
-            // 使用double可减少float舍入造成的条纹/偏差风险
-            constexpr double INV_2_POW_32 = 1. / 4294967296.; // 1 / 2^32
-            double u = static_cast<double>(x) * INV_2_POW_32; // u∈[0,1)
+            // 使用中心采样映射到(0,1), 可减少边界值导致的火花点
+            constexpr double INV_2_POW_32 = 1. / 4294967296.;         // 1 / 2^32
+            double u = (static_cast<double>(x) + 0.5) * INV_2_POW_32; // u∈(0,1)
             float uf = static_cast<float>(u);
 
-            // 避免由于某些平台的奇怪fast-math导致uf==1
-            // nextafterf(1,0)∈[0,1), 是1的前一个float
-            uf = std::min(uf, std::nextafterf(1.f, 0.f));
+            // 防御性保护, 防止平台fast-math把数值推到端点
+            uf = std::clamp(uf, std::nextafterf(0.f, 1.f), std::nextafterf(1.f, 0.f));
             return uf;
         }
     };

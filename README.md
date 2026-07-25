@@ -19,7 +19,6 @@
 - AreaLight & EnvLight
 - Conductor & Dielectric
 - Microfacet Theory
-- BDPTRenderer
 - PTRenderer
 - MIS
 - Tone Mapping
@@ -29,6 +28,7 @@
 
 # Todo
 
+- BDPTRenderer
 - VPT
 - SSS
 - Medium

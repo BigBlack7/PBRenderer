@@ -1,6 +1,5 @@
 ﻿#pragma once
 #include "utils/rng.hpp"
-#include "sequence/sampler.hpp"
 #include <glm/glm.hpp>
 
 namespace pbrt
@@ -19,7 +18,8 @@ namespace pbrt
     {
         float r = glm::sqrt(u.x);
         float phi = 2.f * PI * u.y;
-        /*  圆盘上的点 (r, φ) → 半球上的点 (sinθcosφ, cosθ, sinθsinφ)
+        /*  
+            圆盘上的点 (r, φ) → 半球上的点 (sinθcosφ, cosθ, sinθsinφ)
             坐标关系：
                 x = r * cos(φ) = sinθ * cosφ
                 y = √(1 - r²) = cosθ
