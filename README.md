@@ -21,22 +21,21 @@
 - Microfacet Theory
 - PTRenderer
 - MIS
-- Tone Mapping
 - SFML Window
 - Easy Threadpool
 - Logger
 
 # Todo
 
-- BDPTRenderer
+- Spectrum
 - VPT
 - SSS
 - Medium
+- BDPTRenderer
+- Tone Mapping
 - Sobol Sampler
-- Spectrum
 - Scene Parser
 - Imgui Controller
-- Transform
 
 # Gallery(1024 spp)
 

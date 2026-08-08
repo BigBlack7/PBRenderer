@@ -27,10 +27,6 @@ namespace pbrt
         bool MISC = true;
         const LightSampler &light_sampler = mScene.GetLightSampler(MISC);
 
-        // Path Regularization
-        bool is_regularized = false;
-        bool anyNonSpecularBounces = false;
-
         while (true)
         {
             auto hit_info = mScene.Intersect(ray);
@@ -91,12 +87,6 @@ namespace pbrt
                             if (light_info.has_value() && (!mScene.Intersect(Ray{hit_info->__hitPoint__, light_info->__lightPoint__ - hit_info->__hitPoint__}, 1e-5, 1.f - 1e-5)))
                             {
                                 glm::vec3 light_dir_local = frame.LocalFromWorld(light_info->__direction__);
-
-                                if (is_regularized && anyNonSpecularBounces)
-                                {
-                                    hit_info->__material__->Regularize();
-                                }
-
                                 float bsdf_pdf = hit_info->__material__->PDF(hit_info->__hitPoint__, light_dir_local, view_dir);
                                 float light_weight = PowerHeuristic(light_info->__pdf__ * light_sample_info->__prob__, bsdf_pdf);
                                 radiance += light_weight * beta * hit_info->__material__->BSDF(hit_info->__hitPoint__, light_dir_local, view_dir) * glm::abs(light_dir_local.y) * light_info->__Le__ / (light_info->__pdf__ * light_sample_info->__prob__);
@@ -104,20 +94,10 @@ namespace pbrt
                         }
                     }
 
-                    // PBRT-v4 Light Transport Ⅰ Path Regularization
-                    if (is_regularized && anyNonSpecularBounces)
-                    {
-                        hit_info->__material__->Regularize();
-                    }
-
                     auto bsdf_info = hit_info->__material__->SampleBSDF(hit_info->__hitPoint__, view_dir, rng);
                     if (!bsdf_info.has_value())
                     {
                         break;
-                    }
-                    if (!hit_info->__material__->IsDeltaDistribution())
-                    {
-                        anyNonSpecularBounces = true;
                     }
 
                     last_bsdf_pdf = bsdf_info->__pdf__;
@@ -154,11 +134,9 @@ namespace pbrt
                         radiance += bsdf_weight * beta * light->GetRadiance(ray.__origin__, light_point, -light_dir_delta);
                     }
                 }
-
                 break;
             }
         }
-
         return radiance;
     }
 }

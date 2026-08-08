@@ -7,8 +7,8 @@ namespace pbrt
     class Microfacet // Smith Model
     {
     private:
-        mutable float mAlphaX{};
-        mutable float mAlphaZ{};
+        float mAlphaX{};
+        float mAlphaZ{};
 
     private:
         float SlopeDistribution(const glm::vec2 &slope) const; // 法线斜率分布, 拉伸前的形状分布
@@ -31,7 +31,5 @@ namespace pbrt
 
         float GetAlphaX() const { return mAlphaX; };
         float GetAlphaZ() const { return mAlphaZ; };
-        void SetAlphaX(float alpha_x) const { mAlphaX = alpha_x; };
-        void SetAlphaZ(float alpha_z) const { mAlphaZ = alpha_z; };
     };
 }
