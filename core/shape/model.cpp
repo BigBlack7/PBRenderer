@@ -118,11 +118,18 @@ namespace pbrt
                             result.attributes.normals[idx.normal_index * 3 + 1],
                             result.attributes.normals[idx.normal_index * 3 + 2]};
 
-                        triangles.push_back(Triangle(pos0, pos1, pos2, normal0, normal1, normal2));
+                        if((normal0 == glm::vec3(0.f)) || (normal1 == glm::vec3(0.f)) || (normal2 == glm::vec3(0.f)))
+                        {
+                            triangles.push_back(Triangle{pos0, pos1, pos2});
+                        }
+                        else
+                        {
+                            triangles.push_back(Triangle{pos0, pos1, pos2, normal0, normal1, normal2});
+                        }
                     }
                     else
                     {
-                        triangles.push_back(Triangle(pos0, pos1, pos2));
+                        triangles.push_back(Triangle{pos0, pos1, pos2});
                     }
                 }
                 idx_offset += num_face_vertex;

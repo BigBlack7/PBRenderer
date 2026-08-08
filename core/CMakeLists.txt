@@ -18,5 +18,4 @@ target_link_libraries(core
     sfmlGUI
     OpenEXR::OpenEXR
     stb
-    pcg
 )

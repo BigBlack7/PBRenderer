@@ -17,7 +17,7 @@ namespace pbrt
 
             Complex r_parl = (etat_div_etai * cos_theta_i - cos_theta_t) / (etat_div_etai * cos_theta_i + cos_theta_t);
             Complex r_perp = (cos_theta_i - etat_div_etai * cos_theta_t) / (cos_theta_i + etat_div_etai * cos_theta_t);
-            F[i] = 0.5f * (norm(r_parl) + norm(r_perp));
+            F[i] = 0.5f * (lengthSquared(r_parl) + lengthSquared(r_perp));
         }
         return F;
     }

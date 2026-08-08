@@ -29,7 +29,7 @@ int main()
     pbrt::Model model("../../../assets/models/dragon_871k.obj");
 
     pbrt::Scene scene;
-    pbrt::RNG rng{1234};
+    pbrt::RNG rng{1234, 1};
     for (int i = -3; i <= 3; i++)
     {
         scene.AddShape(sphere, new pbrt::DielectricMaterial{{1.f, 1.f, 1.f}, 1.f + 0.2f * (i + 3), (3.f - i) / 18.f, (3.f - i) / 6.f}, {0.f, 0.5f, i * 2.f}, {0.8f, 0.8f, 0.8f});

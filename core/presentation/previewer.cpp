@@ -154,6 +154,8 @@ namespace pbrt
             mWindow->display();
             // 在当前帧绘制完成后再调整分辨率绘制新帧
             dt = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count() * 0.001f;
+            if (dt == 0.f)
+                dt = 0.001f; // 避免除以0
             AutoAdjustResolution(dt);
         }
         film.SetResolution(mFilmResolution.x, mFilmResolution.y); // 恢复原始分辨率

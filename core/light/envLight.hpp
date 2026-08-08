@@ -9,12 +9,12 @@ namespace pbrt
     {
     private:
         const Image *mImage;
-        float mStartPhi;      // 环境贴图起始phi角度偏移
-        float mPrecomputePhi; // 预计算光功率φ
+        float mStartPhi;                         // 环境贴图起始phi角度偏移
+        float mPrecomputePhi;                    // 预计算光功率φ
         AliasTable mAliasTable, mAliasTableMISC; // 根据环境贴图网格功率进行采样
-        bool mCompensated;
-        glm::ivec2 mGridCount;                  // 环境贴图网格数量
-        static constexpr size_t mGridSize = 50; // 环境贴图网格边长
+        bool mCompensated;                       // 纯色环境图不可补偿
+        glm::ivec2 mGridCount;                   // 环境贴图网格数量
+        static constexpr size_t mGridSize = 50;  // 环境贴图网格边长
     private:
         glm::vec2 ImagePointFromDirection(const glm::vec3 &direction) const;   // 将方向向量映射到环境贴图上的点
         glm::vec3 DirectionFromImagePoint(const glm::vec2 &image_point) const; // 将环境贴图上的点映射到方向向量
@@ -22,7 +22,7 @@ namespace pbrt
 
     public:
         EnvLight(const Image *image, float start_phi = 0);
-        bool Impossible() const override { return mCompensated; }
+        bool SkipMISC() const override { return mCompensated; }
         LightType GetLightType() const override { return LightType::Environment; }
         float Phi(float scene_radius) const override { return mPrecomputePhi * scene_radius * scene_radius; }
         std::optional<LightInfo> SampleLight(const glm::vec3 &surface_point, float scene_radius, const RNG &rng, bool MISC) const override;

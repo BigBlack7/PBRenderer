@@ -25,7 +25,7 @@ namespace pbrt
     {
     public:
         virtual LightType GetLightType() const = 0;
-        virtual bool Impossible() const = 0;             // 经过MISC后是否不可能被采样
+        virtual bool SkipMISC() const = 0;               // 经过MISC后是否不可能被采样
         virtual float Phi(float scene_radius) const = 0; // 光源功率φ radiant flux
         virtual std::optional<LightInfo> SampleLight(const glm::vec3 &surface_point, float scene_radius, const RNG &rng, bool MISC) const = 0;
         virtual float PDF(const glm::vec3 &surface_point, const glm::vec3 &light_point, const glm::vec3 &normal, bool MISC) const = 0;

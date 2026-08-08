@@ -52,12 +52,22 @@ namespace pbrt
 
     inline float norm(const Complex &rhs)
     {
+        return rhs.__a__ * rhs.__a__ + rhs.__b__ * rhs.__b__;
+    }
+
+    inline float length(const Complex &rhs)
+    {
         return std::sqrt(rhs.__a__ * rhs.__a__ + rhs.__b__ * rhs.__b__);
+    }
+
+    inline float lengthSquared(const Complex &rhs)
+    {
+        return rhs.__a__ * rhs.__a__ + rhs.__b__ * rhs.__b__;
     }
 
     inline Complex sqrt(const Complex &rhs)
     {
-        float rhs_norm = norm(rhs);
-        return {std::sqrt(rhs_norm + rhs.__a__) * 0.5f, std::sqrt(rhs_norm - rhs.__a__) * 0.5f};
+        float rhs_length = length(rhs);
+        return {std::sqrt((rhs_length + rhs.__a__) * 0.5f), std::copysign(std::sqrt((rhs_length - rhs.__a__) * 0.5f), rhs.__b__)};
     }
 }

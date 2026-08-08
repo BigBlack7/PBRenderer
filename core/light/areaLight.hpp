@@ -14,7 +14,7 @@ namespace pbrt
     public:
         AreaLight(const Shape &shape, const glm::vec3 &Le, bool is_two_sides) : mShape(shape), mLe(Le), mIsTwoSides(is_two_sides) {}
 
-        bool Impossible() const override { return false; }
+        bool SkipMISC() const override { return false; }
         LightType GetLightType() const override { return LightType::Area; }
         float Phi(float scene_radius) const override;
 

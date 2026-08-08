@@ -1,5 +1,6 @@
 ﻿#include "envLight.hpp"
 #include "sampler/spherical.hpp"
+#include <cmath>
 
 namespace pbrt
 {
@@ -14,39 +15,50 @@ namespace pbrt
                 - 第三象限(x < 0, z <= 0): φ = 180 + φ
                 - 第四象限(x >= 0, z < 0): φ = 360 - φ
             当y接近±1时, sin(θ)接近0, 可能导致数值不稳定, 需要特殊处理
-        */
-        float theta = 0;
-        float phi = 0;
-        glm::vec3 normalized_direction = glm::normalize(direction);
-        if (glm::abs(normalized_direction.y) < 0.99999)
-        {
-            theta = glm::degrees(glm::acos(normalized_direction.y));
-            float sin_phi = glm::abs(normalized_direction.z / glm::sqrt(1 - normalized_direction.y * normalized_direction.y));
-            phi = glm::degrees(glm::asin(sin_phi));
-            // 判断phi角在xz平面的象限
-            if ((direction.x <= 0) && (direction.z > 0)) // 第二象限
-            {
-                phi = 180 - phi;
-            }
-            else if ((direction.x < 0) && (direction.z <= 0)) // 第三象限
-            {
-                phi = 180 + phi;
-            }
-            else if ((direction.x >= 0) && (direction.z < 0)) // 第四象限
-            {
-                phi = 360 - phi;
-            }
-        }
-        else // 垂直向上或向下
-        {
-            theta = (normalized_direction.y > 0) ? 0 : 180;
-        }
 
-        // 根据偏置角度调整环境贴图位置
-        phi += mStartPhi;
-        if (phi > 360)
+            float theta = 0;
+            float phi = 0;
+            glm::vec3 normalized_direction = glm::normalize(direction);
+            if (glm::abs(normalized_direction.y) < 0.99999)
+            {
+                theta = glm::degrees(glm::acos(normalized_direction.y));
+                float sin_phi = glm::abs(normalized_direction.z / glm::sqrt(1 - normalized_direction.y * normalized_direction.y));
+                phi = glm::degrees(glm::asin(sin_phi));
+                // 判断phi角在xz平面的象限
+                if ((direction.x <= 0) && (direction.z > 0)) // 第二象限
+                {
+                    phi = 180 - phi;
+                }
+                else if ((direction.x < 0) && (direction.z <= 0)) // 第三象限
+                {
+                    phi = 180 + phi;
+                }
+                else if ((direction.x >= 0) && (direction.z < 0)) // 第四象限
+                {
+                    phi = 360 - phi;
+                }
+            }
+            else // 垂直向上或向下
+            {
+                theta = (normalized_direction.y > 0) ? 0 : 180;
+            }
+
+            // 根据偏置角度调整环境贴图位置
+            phi += mStartPhi;
+            if (phi > 360)
+            {
+                phi -= 360;
+            }
+            return glm::vec2{mImage->GetWidth() * phi / 360, mImage->GetHeight() * theta / 180};
+        */
+
+        glm::vec3 normalized_direction = glm::normalize(direction);
+        float theta = glm::degrees(glm::acos(glm::clamp(normalized_direction.y, -1.f, 1.f)));
+        float phi = glm::degrees(glm::atan(normalized_direction.z, normalized_direction.x)) + mStartPhi;
+        phi = std::fmod(phi, 360.f);
+        if (phi < 0)
         {
-            phi -= 360;
+            phi += 360.f;
         }
         return glm::vec2{mImage->GetWidth() * phi / 360, mImage->GetHeight() * theta / 180};
     }

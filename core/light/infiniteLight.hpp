@@ -12,7 +12,7 @@ namespace pbrt
     public:
         InfiniteLight(const glm::vec3 &Le) : mLe(Le) {}
 
-        bool Impossible() const override { return true; }
+        bool SkipMISC() const override { return true; }
         LightType GetLightType() const override { return LightType::Infinite; }
         float Phi(float scene_radius) const override;
         std::optional<LightInfo> SampleLight(const glm::vec3 &surface_point, float scene_radius, const RNG &rng, bool MISC) const override;

@@ -36,7 +36,7 @@ namespace pbrt
         void AddInfiniteLight(const Light *light)
         {
             __lightSampler__.AddLight(light);
-            if (!light->Impossible())
+            if (!light->SkipMISC())
             {
                 __lightSamplerMISC__.AddLight(light);
             }

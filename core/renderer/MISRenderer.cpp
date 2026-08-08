@@ -12,7 +12,7 @@ namespace pbrt
     glm::vec3 MISRenderer::RenderPixel(const glm::ivec3 &pixel_coord)
     {
         thread_local RNG rng{};
-        rng.SetSeed(static_cast<size_t>(pixel_coord.x + pixel_coord.y * 10000 + pixel_coord.z * 10000 * 10000));
+        rng.SetState(pixel_coord.x + pixel_coord.y * mCamera.GetFilm().GetWidth(), pixel_coord.z);
         auto ray = mCamera.GenerateRay(pixel_coord, {rng.Uniform(), rng.Uniform()});
 
         glm::vec3 beta = {1.f, 1.f, 1.f};     // i = 1, β = 1; i > 1, β = Π( f_i * |cosθ_i| / pdf_i )

@@ -7,12 +7,6 @@ namespace pbrt
     {
         while (master->mAlive)
         {
-            if (master->mTasks.empty())
-            {
-                // 解决工作线程空转问题, 防止与BVH构建线程竞争
-                std::this_thread::sleep_for(std::chrono::milliseconds(2));
-                continue;
-            }
             Task *task = master->GetTask();
             if (task != nullptr)
             {
@@ -22,7 +16,9 @@ namespace pbrt
             }
             else
             {
-                std::this_thread::yield(); // 让出操作权给os, 让os选择就绪线程执行
+                // 解决工作线程空转问题, 2ms防止与BVH构建线程竞争
+                std::this_thread::sleep_for(std::chrono::milliseconds(2));
+                continue;
             }
         }
     }
@@ -33,8 +29,10 @@ namespace pbrt
         mPendingTaskCount = 0;
         if (thread_count == 0)
         {
-            // 赋值线程数为CPU线程数
+            // 赋值线程数为CPU线程数, 该函数可能返回0
             thread_count = std::thread::hardware_concurrency();
+            if (thread_count == 0)
+                thread_count = 1; // 至少创建一个线程
         }
 
         for (size_t i = 0; i < thread_count; i++)
@@ -157,7 +155,7 @@ namespace pbrt
 
     Task *ThreadPool::GetTask()
     {
-        Guard guard(mLock);
+        Guard guard(mLock); // 线程安全获取任务, 如防止工作线程判断为空时, 主线程又添加任务导致数据竞争
         if (mTasks.empty())
         {
             return nullptr;
